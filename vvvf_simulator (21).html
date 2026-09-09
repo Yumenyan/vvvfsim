@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VVVF Sound Simulator</title>
+<style>
+:root{
+  --bg-0:#0d0f14;
+  --bg-1:#14171d;
+  --glass: rgba(255,255,255,0.055);
+  --glass-hi: rgba(255,255,255,0.09);
+  --glass-border: rgba(255,255,255,0.10);
+  --glass-border-hi: rgba(255,255,255,0.18);
+  --accent:#5ac8fa;
+  --accent-2:#ff9f43;
+  --accent-3:#ff6b6b;
+  --accent-soft: rgba(90,200,250,0.16);
+  --text:#f2f4f7;
+  --text-dim:#9aa3b2;
+  --text-faint:#6b7383;
+  --mono: 'SF Mono','DejaVu Sans Mono','Consolas','Menlo',monospace;
+  --ui: -apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;min-height:100vh;color:var(--text);font-family:var(--ui);}
+body{
+  padding:22px;
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(90,200,250,0.10), transparent 55%),
+    radial-gradient(1000px 800px at 100% 10%, rgba(255,159,67,0.07), transparent 50%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 70%);
+  background-attachment:fixed;
+}
+h1{font-family:var(--ui);font-weight:700;font-size:22px;letter-spacing:0.2px;margin:0 0 2px 0;
+  background:linear-gradient(135deg,#fff, #b9c2d0 65%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.sub{color:var(--text-dim);font-size:12.5px;margin-bottom:20px;letter-spacing:0.2px;}
+.layout{display:grid;grid-template-columns:360px 1fr;gap:16px;}
+@media (max-width:1024px){.layout{grid-template-columns:1fr;}}
+
+.panel{
+  background:var(--glass);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg);
+  padding:18px;margin-bottom:16px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 30px -14px rgba(0,0,0,0.55);
+}
+.panel h2{
+  font-size:12px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;
+  color:var(--text-dim);margin:0 0 12px 0;padding-bottom:8px;
+  border-bottom:1px solid var(--glass-border);
+}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.row label{font-size:12.5px;color:var(--text-dim);min-width:112px;}
+
+input[type=number],input[type=text],select{
+  background:#1e232c;
+  border:1px solid var(--glass-border);
+  color:var(--text);border-radius:var(--radius-sm);
+  padding:6px 8px;font-family:var(--mono);font-size:12px;width:80px;
+  transition:.15s;
+  color-scheme: dark;
+}
+input[type=number]:focus,input[type=text]:focus,select:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);
+}
+/* Windowsのネイティブselect/optionはCSS透過色・変数を無視するため
+   option要素に不透明な固定色を明示的に指定する */
+option{
+  background:#1e232c;
+  color:#f2f4f7;
+}
+select{width:auto;}
+input[type=range]{
+  accent-color:var(--accent);flex:1;height:4px;
+}
+input[type=checkbox]{
+  accent-color:var(--accent);width:16px;height:16px;cursor:pointer;
+}
+
+button{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  color:var(--text);border-radius:999px;padding:8px 15px;
+  font-family:var(--ui);font-size:12.5px;font-weight:500;cursor:pointer;transition:.16s;
+  backdrop-filter: blur(10px);
+}
+button:hover{border-color:var(--glass-border-hi);background:var(--glass-hi);transform:translateY(-1px);}
+button:active{transform:translateY(0);}
+button.primary{background:linear-gradient(135deg, var(--accent), #3aa8e0);border-color:transparent;color:#03202e;font-weight:600;
+  box-shadow:0 6px 18px -6px rgba(90,200,250,0.55);}
+button.primary:hover{filter:brightness(1.08);}
+button.warn{border-color:rgba(255,107,107,0.5);color:#ffb0b0;}
+button.warn:hover{background:rgba(255,107,107,0.15);}
+button.rec-on{background:rgba(255,107,107,0.22);border-color:var(--accent-3);color:#ffd4d4;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:0.55;}100%{opacity:1;}}
+button:disabled{opacity:.32;cursor:not-allowed;transform:none;}
+button.small{padding:6px 12px;font-size:11.5px;}
+.checkline{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-dim);}
+
+.speed-display{
+  font-family:var(--mono);text-align:center;
+  background:radial-gradient(circle at 50% 0%, rgba(255,255,255,0.04), rgba(0,0,0,0.35));
+  border:1px solid var(--glass-border);border-radius:var(--radius-md);
+  padding:16px 0;margin-bottom:12px;
+}
+.speed-num{font-size:54px;font-weight:600;color:var(--accent-2);text-shadow:0 0 22px rgba(255,159,67,.45);line-height:1;}
+.speed-unit{font-size:11.5px;color:var(--text-faint);letter-spacing:3px;margin-top:2px;}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:10px;}
+.status-grid b{color:var(--accent);display:block;font-size:13px;font-weight:600;}
+
+.notchgrid{display:flex;gap:5px;flex-wrap:wrap;
+  background:rgba(255,255,255,0.035);padding:4px;border-radius:999px;border:1px solid var(--glass-border);}
+.notchgrid button{flex:1;min-width:36px;padding:8px 2px;font-family:var(--mono);border-radius:999px;border-color:transparent;background:transparent;}
+.notchgrid button:hover{background:var(--glass-hi);}
+.notchgrid button.active{background:linear-gradient(135deg, var(--accent-2), #e0812f);color:#2a1400;font-weight:700;
+  box-shadow:0 4px 12px -4px rgba(255,159,67,0.6);}
+.notchgrid.brake button.active{background:linear-gradient(135deg, var(--accent-3), #d64545);color:#2a0505;}
+
+/* ---------- Stage cards (replaces old table) ---------- */
+.stage-card{
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-md);
+  padding:14px 16px;margin-bottom:12px;
+  transition:.15s;
+}
+.stage-card:hover{border-color:var(--glass-border-hi);}
+.stage-card-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--glass-border);}
+.stage-num{
+  font-family:var(--mono);font-size:11px;color:var(--bg-0);background:var(--accent);
+  border-radius:999px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;
+}
+.stage-card-head .spd-input{width:64px;}
+.stage-card-head .tilde{color:var(--text-faint);font-size:12px;}
+.stage-card-head select{margin-left:auto;}
+.stage-card-head .del-btn{padding:5px 10px;font-size:13px;color:var(--accent-3);border-color:rgba(255,107,107,0.3);}
+.stage-card-head .dup-btn{padding:5px 10px;font-size:13px;color:var(--accent);border-color:rgba(90,200,250,0.3);}
+.stage-card-body{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+  gap:10px 16px;
+}
+.param-group{
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:var(--radius-sm);
+  padding:9px 11px;
+}
+.param-group .pg-title{
+  display:flex; align-items:center; gap:8px;
+  font-size:10.5px; letter-spacing:.55px; text-transform:uppercase;
+  color:var(--text-faint); margin-bottom:7px; font-weight:600;
+}
+.param-group .pg-title .pg-label{ flex:1; }  /* push toggle to right */
+.param-group .pg-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.param-group input[type=number]{width:64px;}
+.param-group .arrow{color:var(--text-faint);font-size:11px;}
+.param-group .unit{font-size:10.5px;color:var(--text-faint);}
+.param-group.disabled{opacity:.4;pointer-events:none;}
+
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{text-align:left;color:var(--accent);font-weight:normal;padding:4px 4px;border-bottom:1px solid var(--glass-border);font-size:10px;letter-spacing:.5px;}
+td{padding:4px 4px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle;}
+td input,td select{width:100%;min-width:52px;font-size:11px;padding:4px;}
+.hint{font-size:11px;color:var(--text-faint);line-height:1.6;margin-top:10px;}
+.mono-val{font-family:var(--mono);font-size:11px;color:var(--text-dim);min-width:46px;text-align:right;}
+.presetbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+canvas{width:100%;height:110px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:var(--radius-md);display:block;}
+.flexbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-family:var(--mono);
+  border:1px solid var(--glass-border);color:var(--text-faint);background:rgba(255,255,255,0.03);}
+.badge.on{border-color:var(--accent-2);color:var(--accent-2);background:rgba(255,159,67,0.12);}
+.tablewrap{overflow-x:auto;}
+/* ---- Toggle switch — one consistent component, used everywhere ---- */
+.toggle{
+  /* Outer track */
+  position:relative; display:inline-flex; align-items:center;
+  width:34px; height:20px; flex-shrink:0; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.toggle input{
+  position:absolute; opacity:0; width:0; height:0; pointer-events:none;
+}
+.toggle-track{
+  width:34px; height:20px; border-radius:999px;
+  background:rgba(255,255,255,0.10);
+  border:1.5px solid rgba(255,255,255,0.14);
+  transition:background .2s, border-color .2s;
+  position:relative;
+}
+.toggle-thumb{
+  position:absolute;
+  top:2px; left:2px;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,0.35);
+  transition:transform .2s cubic-bezier(.4,0,.2,1), background .2s;
+}
+/* Checked state */
+.toggle input:checked ~ .toggle-track{
+  background:var(--accent);
+  border-color:transparent;
+}
+.toggle input:checked ~ .toggle-track .toggle-thumb{
+  transform:translateX(14px);
+}
+/* Disabled-via-parent (.param-group.disabled) propagates via CSS opacity */
+.toggle input:disabled ~ .toggle-track{
+  opacity:.4; cursor:not-allowed;
+}
+
+/* ---- Inline toggle row: label + toggle on same line ---- */
+.toggle-row{
+  display:flex; align-items:center; gap:8px;
+  font-size:11px; letter-spacing:.5px; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+  margin-bottom:7px;
+}
+.toggle-row span{ flex:1; }   /* label fills remaining space */
+</style>
+</head>
+<body>
+
+<h1>VVVF Sound Simulator</h1>
+<div class="sub">パルスパターン組立式・実車PWM合成 / Liquid Glass Edition</div>
+
+<div class="layout">
+
+  <div>
+    <div class="panel">
+      <h2>運転台</h2>
+      <div class="speed-display">
+        <span class="speed-num" id="speedNum">0.0</span>
+        <div class="speed-unit">KM/H</div>
+      </div>
+      <div class="row">
+        <label>手動速度</label>
+        <input type="range" id="manualSpeed" min="0" max="120" value="0" step="0.1">
+      </div>
+      <div class="checkline">
+        <label class="toggle"><input type="checkbox" id="manualMode"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+        <label for="manualMode">手動速度モード（走行シミュレーションを無視）</label>
+      </div>
+      <div class="row" style="margin-top:8px;"><label style="min-width:auto;">力行ノッチ</label></div>
+      <div class="notchgrid" id="powerNotches"></div>
+      <div class="row" style="margin-top:6px;"><label style="min-width:auto;">ブレーキノッチ</label></div>
+      <div class="notchgrid brake" id="brakeNotches"></div>
+
+      <!-- 加速度カスタム設定 -->
+      <details style="margin-top:10px;">
+        <summary style="font-size:11.5px;color:var(--text-dim);cursor:pointer;user-select:none;">⚙️ 加速度・減速度の設定</summary>
+        <div style="margin-top:8px;background:rgba(0,0,0,0.2);border-radius:var(--radius-sm);padding:10px;">
+          <div class="hint" style="margin-bottom:8px;">各ノッチの加速度/減速度をkm/h/sで指定。実車例: P1=1.5, P4=3.3, B4=4.0</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <div style="font-size:10.5px;color:var(--text-faint);margin-bottom:4px;">力行 (km/h/s)</div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">P1</label><input type="number" id="accelP1" step="0.1" min="0.1" max="10" value="1.0" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">P2</label><input type="number" id="accelP2" step="0.1" min="0.1" max="10" value="1.6" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">P3</label><input type="number" id="accelP3" step="0.1" min="0.1" max="10" value="2.2" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">P4</label><input type="number" id="accelP4" step="0.1" min="0.1" max="10" value="3.0" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">P5</label><input type="number" id="accelP5" step="0.1" min="0.1" max="10" value="4.0" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+            </div>
+            <div>
+              <div style="font-size:10.5px;color:var(--text-faint);margin-bottom:4px;">ブレーキ (km/h/s)</div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B1</label><input type="number" id="accelB1" step="0.1" min="0.1" max="15" value="1.0" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B2</label><input type="number" id="accelB2" step="0.1" min="0.1" max="15" value="1.6" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B3</label><input type="number" id="accelB3" step="0.1" min="0.1" max="15" value="2.3" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B4</label><input type="number" id="accelB4" step="0.1" min="0.1" max="15" value="3.0" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B5</label><input type="number" id="accelB5" step="0.1" min="0.1" max="15" value="3.8" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B6</label><input type="number" id="accelB6" step="0.1" min="0.1" max="15" value="4.6" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">B7</label><input type="number" id="accelB7" step="0.1" min="0.1" max="15" value="5.5" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+              <div class="row" style="margin-bottom:4px;"><label style="min-width:24px;font-size:11px;">EB</label><input type="number" id="accelEB" step="0.1" min="0.1" max="20" value="7.0" style="width:60px;"><span style="font-size:10px;color:var(--text-faint);">km/h/s</span></div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:6px;">
+            <label style="font-size:11px;">惰行減速度</label>
+            <input type="number" id="accelCoast" step="0.05" min="0" max="2" value="0.4" style="width:60px;">
+            <span style="font-size:10px;color:var(--text-faint);">km/h/s</span>
+          </div>
+        </div>
+      </details>
+      
+      <div class="flexbar" style="margin-top:12px;">
+        <button id="btnStart" class="primary">▶ サウンド開始</button>
+        <button id="btnAuto">自動走行デモ</button>
+        <button id="btnStop" class="warn">非常停止</button>
+      </div>
+      <div class="flexbar" style="margin-top:8px;">
+        <button id="btnRecord" style="width:100%;" disabled>🔴 音声録音開始 (ダウンロード保存)</button>
+      </div>
+
+      <div class="status-grid">
+        <div>電気周波数<b id="stElec">0.0 Hz</b></div>
+        <div>モーター回転数<b id="stRpm">0 rpm</b></div>
+        <div>現在パルス段<b id="stStage">-</b></div>
+        <div>変調率<b id="stMod">0%</b></div>
+      </div>
+      <div class="flexbar" style="margin-top:8px;">
+        <span class="badge" id="badgePmsm">PMSM重畳</span>
+        <span class="badge" id="badgeSpread">ランダム拡散</span>
+        <span class="badge" id="badgeGear">歯車音</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>モーター・歯車・走行音設定</h2>
+      <div class="row"><label>極数</label>
+        <select id="poles">
+          <option value="4">4極 (標準)</option>
+          <option value="6" selected>6極</option>
+          <option value="8">8極</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>3レベルVVVF</label>
+        <label class="toggle"><input type="checkbox" id="level3On"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+        <span style="font-size:10.5px;color:var(--text-faint);">NPC方式3レベルPWM（滑らかな階段状波形）</span>
+      </div>
+      <div class="row"><label>歯数比（小:大）</label>
+        <input type="number" id="teethA" value="14" style="width:52px;"> :
+        <input type="number" id="teethB" value="85" style="width:52px;">
+      </div>
+      <div class="row"><label>車輪径 (mm)</label><input type="number" id="wheelDia" value="860"></div>
+      <div class="row"><label>基底周波数 (Hz)</label><input type="number" id="baseFreq" value="55" min="5" max="200"></div>
+      <div class="row"><label>最高速度 (km/h)</label><input type="number" id="maxSpeed" value="120"></div>
+      <div class="row"><label>モーター唸り音量</label><input type="range" id="humAmt" min="0" max="100" value="75"></div>
+      <div class="pg-title" style="margin-top:10px;"><span class="pg-label">🎵 倍音バンク設定（各次倍音のゲイン）</span></div>
+      <div id="humHarmonicEditor" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:4px;"></div>
+      <div class="flexbar" style="margin-top:8px;gap:6px;">
+        <button class="small" id="addHarmonic">＋ 倍音追加</button>
+        <button class="small" id="resetHarmonics">デフォルトに戻す</button>
+      </div>
+      <div class="hint">各倍音の「次数 n」と「ゲイン」を設定。ゲイン0で無効化。実車分析では3次倍音(3倍音)が特に強い傾向があります。</div>
+      <div class="row"><label>歯車・走行音量</label><input type="range" id="gearAmt" min="0" max="100" value="35"></div>
+    </div>
+
+    <div class="panel">
+      <h2>直流モーター 走行音モード</h2>
+      <div class="checkline">
+        <label class="toggle"><input type="checkbox" id="dcMotorOn"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+        <label for="dcMotorOn">直流モードを有効化（VVVFパターンを無視してDCモーター音を合成）</label>
+      </div>
+      <div id="dcMotorPanel" style="display:none;margin-top:12px;">
+        <div class="row">
+          <label>制御方式</label>
+          <select id="dcControlType" style="flex:1;width:auto;">
+            <option value="resistance">抵抗制御（旧型通勤電車）</option>
+            <option value="chopperArm">電機子チョッパ制御（営団6000系など）</option>
+          </select>
+        </div>
+        <div id="dcResistancePanel">
+          <div class="hint">抵抗制御: ノッチ投入ごとに段ごとの低周波電流ハムと接触器の「バン」音を再現します。起動時の重い「グゥーン」感を倍音バンクで調整してください。</div>
+          <div class="row"><label>ノッチ数</label>
+            <select id="dcResNotch">
+              <option value="4">4ノッチ（旧型）</option>
+              <option value="5" selected>5ノッチ（通勤型）</option>
+              <option value="7">7ノッチ（高性能型）</option>
+            </select>
+          </div>
+          <div class="row"><label>接触器音量</label><input type="range" id="dcContactorAmt" min="0" max="100" value="55"><span id="dcContactorVal" class="mono-val">55%</span></div>
+        </div>
+        <div id="dcArmChopperPanel" style="display:none;">
+          <div class="hint">電機子チョッパ: 起動から全速まで連続的にチョッパ周波数が変化する「キュィーーン」音を再現。のこぎり波ベースのチョッパ音を合成します。</div>
+          <div class="row"><label>チョッパ周波数 (低速)</label><input type="number" id="dcArmChopHz0" value="100" style="width:72px;"><span style="font-size:11px;color:var(--text-faint);">Hz</span></div>
+          <div class="row"><label>チョッパ周波数 (高速)</label><input type="number" id="dcArmChopHz1" value="600" style="width:72px;"><span style="font-size:11px;color:var(--text-faint);">Hz</span></div>
+          <div class="row"><label>チョッパ音量</label><input type="range" id="dcArmChopAmt" min="0" max="100" value="65"><span id="dcArmChopVal" class="mono-val">65%</span></div>
+        </div>
+        <div class="row" style="margin-top:8px;"><label>モーター回転ノイズ</label><input type="range" id="dcRotNoise" min="0" max="100" value="40"><span id="dcRotNoiseVal" class="mono-val">40%</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>マスター設定</h2>
+      <div class="row"><label>音量</label><input type="range" id="volume" min="0" max="100" value="65"></div>
+
+      <div class="pg-title" style="margin-top:10px;"><span class="pg-label">低音カット（ハイパス）</span></div>
+      <div class="row"><label>周波数 (Hz)</label><input type="range" id="hpCutoff" min="20" max="300" value="50"><span id="hpCutoffVal" class="mono-val">50Hz</span></div>
+      <div class="row"><label>レゾナンス Q</label><input type="range" id="hpQ" min="30" max="400" value="70"><span id="hpQVal" class="mono-val">0.70</span></div>
+
+      <div class="pg-title" style="margin-top:10px;"><span class="pg-label">高域上限（ローパス）</span></div>
+      <div class="row"><label>周波数 (Hz)</label><input type="range" id="lpCutoff" min="800" max="8000" value="6500"><span id="lpCutoffVal" class="mono-val">6500Hz</span></div>
+      <div class="row"><label>レゾナンス Q</label><input type="range" id="lpQ" min="30" max="400" value="70"><span id="lpQVal" class="mono-val">0.70</span></div>
+
+      <div class="pg-title" style="margin-top:10px;"><span class="pg-label">パラメトリック・ピーク/ノッチ</span></div>
+      <div class="row"><label>中心周波数 (Hz)</label><input type="range" id="peakFreq" min="80" max="10000" value="1200"><span id="peakFreqVal" class="mono-val">1200Hz</span></div>
+      <div class="row"><label>ゲイン (-100〜+100)</label><input type="range" id="peakGain" min="-100" max="100" value="0"><span id="peakGainVal" class="mono-val">0%</span></div>
+      <div class="row"><label>帯域幅 Q</label><input type="range" id="peakQ" min="30" max="800" value="140"><span id="peakQVal" class="mono-val">1.40</span></div>
+      <div class="hint">ゲインを上げると強調（ブースト）、下げると削る（カット/ノッチ）。特定帯域のクセを狙って足したり削ったりして、より実車に近い質感に追い込めます。</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>波形モニター</h2>
+      <canvas id="scope"></canvas>
+    </div>
+    <div class="panel">
+      <h2>畳み込みフィルター（部屋・車両シミュレーション）</h2>
+      <div class="checkline">
+        <label class="toggle"><input type="checkbox" id="convolverOn"><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+        <label for="convolverOn">畳み込みフィルターを有効化</label>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label>IRプリセット</label>
+        <select id="convolverPreset" style="flex:1;">
+          <option value="cabin">車内（小型閉空間）</option>
+          <option value="tunnel">トンネル内（長残響）</option>
+          <option value="station">駅ホーム（広空間）</option>
+          <option value="underfloor">床下（密封・重め）</option>
+          <option value="custom">カスタム（WAV読込）</option>
+        </select>
+      </div>
+      <div class="row" id="customIrRow" style="display:none;">
+        <label>IR WAVファイル</label>
+        <input type="file" id="irFile" accept=".wav" style="font-size:11px;color:var(--text-dim);">
+      </div>
+      <div class="row">
+        <label>ウェット量</label>
+        <input type="range" id="convolverWet" min="0" max="100" value="30">
+        <span id="convolverWetVal" class="mono-val">30%</span>
+      </div>
+      <div class="hint">IRプリセットはWeb Audio APIで合成した近似インパルス応答です。実機録音IRを読み込む場合は「カスタム」を選んでWAVファイルを指定してください。</div>
+    </div>
+
+    <div class="panel">
+      <h2>パルスパターン編集</h2>
+      <div class="presetbar">
+        <button class="small" id="addStage">＋ 段階を追加</button>
+        <button class="small" id="sortStages">⚡ 速度順に手動整列</button>
+      </div>
+      <div id="stageBody"></div>
+      <div class="hint">
+        各カードが1つの速度帯（段）です。搬送波・ダイポーラバイアス・3次高調波重畳・PMSM重畳・ランダム拡散・変調率は、いずれも「開始→終了」の2値を指定すると、その段の速度帯の中で自動的に滑らかに補間されます（開始・終了を同じ値にすれば固定）。
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>保存・読込</h2>
+      <div class="flexbar">
+        <button id="btnSave">💾 パターンを保存 (JSON)</button>
+        <button id="btnLoadTrigger">📂 パターンを読込</button>
+        <input type="file" id="fileInput" accept=".json" style="display:none;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Utility ----------
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+let stages = [];
+let stageIdCounter = 1;
+
+function newStage(over={}){
+  return Object.assign({
+    id: stageIdCounter++,
+    from: 0, to: 10,
+    mode: 'async',   // 'async' | 'sync' | 'off' | 'she' | 'chm' | 'ho'
+    value: 160,
+    valueEnd: 160,
+    // ダイポーラバイアス（変調波の非対称クリップ、% -100〜100）
+    biasLower: -100, biasUpper: 100,
+    // 3次高調波重畳
+    thirdOn: false, thirdPct: 15,
+    // PMSM重畳（開始→終了で速度帯内スイープ可能）
+    pmsmOn: false, pmsmFreqStart: 1500, pmsmFreqEnd: 1500,
+    // 拡散モード: 'off' | 'random' | 'randomHop' | 'continuous' | 'toggle'
+    // 非同期(async)以外の方式では常に無効
+    spreadMode: 'off', spreadHzStart: 0, spreadHzEnd: 0, spreadRate: 4,
+    // 変調率手動指定（開始→終了で速度帯内スイープ可能）
+    modManualOn: false, modManualStart: 80, modManualEnd: 80
+  }, over);
+}
+
+// ご提示の音声パターン (TG-V050) を初期ロード
+stages = [
+  newStage({from:0, to:7, mode:'async', value:160, valueEnd:160}),
+  newStage({from:7, to:16, mode:'async', value:320, valueEnd:320}),
+  newStage({from:16, to:27, mode:'async', value:640, valueEnd:640}),
+  newStage({from:27, to:42, mode:'sync', value:15}),
+  newStage({from:42, to:58, mode:'sync', value:9}),
+  newStage({from:58, to:75, mode:'sync', value:5}),
+  newStage({from:75, to:90, mode:'sync', value:3}),
+  newStage({from:90, to:120, mode:'sync', value:1})
+];
+
+// ---------- Card-based stage editor ----------
+function renderStages(){
+  $('stageBody').innerHTML = stages.map((st, idx)=>{
+    const isAsync = st.mode === 'async';
+    const isSync  = st.mode === 'sync';
+    const isStepped = ['off','she','chm','ho'].includes(st.mode); // 角度制御系モード
+    const spreadAllowed = isAsync; // 同期系(sync/off/she/chm/ho)は拡散不可
+    const spreadIsOn = spreadAllowed && st.spreadMode !== 'off';
+
+    const da = isAsync ? '' : 'disabled';
+    const daCls = isAsync ? '' : ' disabled';
+    const dm = st.modManualOn ? '' : 'disabled';
+    const dmCls = st.modManualOn ? '' : ' disabled';
+    const dp = st.pmsmOn ? '' : 'disabled';
+    const dpCls = st.pmsmOn ? '' : ' disabled';
+    const dt = st.thirdOn ? '' : 'disabled';
+    const dtCls = st.thirdOn ? '' : ' disabled';
+    const dsCls = spreadIsOn ? '' : ' disabled';
+    const dsAttr = spreadIsOn ? '' : 'disabled';
+
+    const modeLabel = {async:'非同期(Hz)', sync:'同期(パルス)', off:'パルス切', she:'SHEパルス', chm:'CHMパルス', ho:'HOパルス'};
+
+    return `<div class="stage-card" data-id="${st.id}">
+      <div class="stage-card-head">
+        <span class="stage-num">${idx+1}</span>
+        <input class="spd-input" type="number" step="0.1" value="${st.from}" data-f="from" title="開始km/h">
+        <span class="tilde">〜</span>
+        <input class="spd-input" type="number" step="0.1" value="${st.to}" data-f="to" title="終了km/h">
+        <span style="font-size:11px;color:var(--text-faint);">km/h</span>
+        <select data-f="mode">
+          ${Object.entries(modeLabel).map(([v,label])=>`<option value="${v}" ${st.mode===v?'selected':''}>${label}</option>`).join('')}
+        </select>
+        <button class="dup-btn" data-op="dup" title="この段を複製（直下に追加）">⧉</button>
+        <button class="del-btn" data-op="del" title="この段を削除">×</button>
+      </div>
+      <div class="stage-card-body">
+
+        ${(isAsync || isSync || isStepped) ? `
+        <div class="param-group">
+          <div class="pg-title"><span class="pg-label">🎛️ 搬送波 ${isAsync?'(開始Hz → 終了Hz)':isStepped&&st.mode!=='off'?'(パルス数) ― SHE/CHM/HO共通':'(パルス数)'}</span></div>
+          <div class="pg-row">
+            <input type="number" step="1" min="1" value="${st.value}" data-f="value">
+            ${isAsync
+              ? `<span class="arrow">→</span><input type="number" step="1" min="1" value="${st.valueEnd??st.value}" data-f="valueEnd"><span class="unit">Hz</span>`
+              : st.mode==='off'
+                ? `<span class="unit" style="color:var(--text-faint);">（パルス切：値は使用しません）</span>`
+                : `<span class="unit">パルス</span>`}
+          </div>
+        </div>` : ''}
+
+        <div class="param-group">
+          <div class="pg-title"><span class="pg-label">⚖️ ダイポーラバイアス（変調波の上限/下限）</span></div>
+          <div class="pg-row">
+            下限<input type="number" step="5" min="-100" max="100" value="${st.biasLower}" data-f="biasLower">%
+            上限<input type="number" step="5" min="-100" max="100" value="${st.biasUpper}" data-f="biasUpper">%
+          </div>
+        </div>
+
+        <div class="param-group">
+          <div class="pg-title">
+            <span class="pg-label">〰️ 3次高調波重畳</span>
+            <label class="toggle"><input type="checkbox" data-f="thirdOn" ${st.thirdOn?'checked':''}><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+          <div class="pg-row${dtCls}">
+            重畳量<input type="number" step="1" min="0" max="50" value="${st.thirdPct}" data-f="thirdPct" ${dt}><span class="unit">%</span>
+          </div>
+        </div>
+
+        <div class="param-group${isAsync?'':' disabled'}">
+          <div class="pg-title">
+            <span class="pg-label">🧲 PMSM重畳 ${isAsync?'':'<span style="opacity:.6;">(非同期専用)</span>'}</span>
+            <label class="toggle"><input type="checkbox" data-f="pmsmOn" ${st.pmsmOn?'checked':''} ${da}><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+          <div class="pg-row${dpCls || daCls}">
+            <input type="number" step="10" value="${st.pmsmFreqStart}" data-f="pmsmFreqStart" ${dp||da}>
+            <span class="arrow">→</span>
+            <input type="number" step="10" value="${st.pmsmFreqEnd}" data-f="pmsmFreqEnd" ${dp||da}>
+            <span class="unit">Hz</span>
+          </div>
+        </div>
+
+        <div class="param-group${spreadAllowed?'':' disabled'}">
+          <div class="pg-title"><span class="pg-label">🌫️ 拡散モード ${spreadAllowed?'':'<span style="opacity:.6;">(非同期専用・同期系は不可)</span>'}</span></div>
+          <div class="pg-row">
+            <select data-f="spreadMode" ${spreadAllowed?'':'disabled'} style="width:100%;">
+              <option value="off"        ${st.spreadMode==='off'?'selected':''}>なし</option>
+              <option value="random"     ${st.spreadMode==='random'?'selected':''}>ランダム拡散（連続ゆらぎ）</option>
+              <option value="randomHop"  ${st.spreadMode==='randomHop'?'selected':''}>ランダム切替拡散（離散ジャンプ）</option>
+              <option value="continuous" ${st.spreadMode==='continuous'?'selected':''}>連続拡散（LFOスイープ）</option>
+              <option value="toggle"     ${st.spreadMode==='toggle'?'selected':''}>切替拡散（2値交互）</option>
+            </select>
+          </div>
+          <div class="pg-row${dsCls}" style="margin-top:6px;">
+            <input type="number" step="10" value="${st.spreadHzStart}" data-f="spreadHzStart" ${dsAttr}>
+            <span class="arrow">→</span>
+            <input type="number" step="10" value="${st.spreadHzEnd}" data-f="spreadHzEnd" ${dsAttr}>
+            <span class="unit">Hz幅</span>
+          </div>
+          <div class="pg-row${dsCls}" style="margin-top:4px;">
+            速度<input type="number" step="0.5" min="0.1" max="40" value="${st.spreadRate}" data-f="spreadRate" ${dsAttr}><span class="unit">Hz（切替/LFO速度）</span>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <div class="pg-title">
+            <span class="pg-label">🎚️ 変調率 手動指定</span>
+            <label class="toggle"><input type="checkbox" data-f="modManualOn" ${st.modManualOn?'checked':''}><div class="toggle-track"><div class="toggle-thumb"></div></div></label>
+          </div>
+          <div class="pg-row${dmCls}">
+            <input type="number" step="5" value="${st.modManualStart}" data-f="modManualStart" ${dm}>
+            <span class="arrow">→</span>
+            <input type="number" step="5" value="${st.modManualEnd}" data-f="modManualEnd" ${dm}>
+            <span class="unit">%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+  }).join('');
+}
+
+$('stageBody').addEventListener('change', e=>{
+  const el = e.target;
+  const f = el.dataset.f;
+  if(!f) return;
+  const card = el.closest('.stage-card[data-id]');
+  if(!card) return;
+
+  const id = Number(card.dataset.id);
+  const stage = stages.find(s=>s.id === id);
+  if(!stage) return;
+
+  if(el.type === 'checkbox'){
+    stage[f] = el.checked;
+  } else if(el.tagName === 'SELECT'){
+    stage[f] = el.value;
+  } else {
+    const v = parseFloat(el.value);
+    if(isFinite(v)) stage[f] = v;
+  }
+
+  // Fields whose change affects which controls are enabled/disabled need a re-render.
+  const rerenderFields = ['mode','modManualOn','pmsmOn','spreadMode','thirdOn'];
+  if(rerenderFields.includes(f)){
+    renderStages();
+  }
+});
+
+$('stageBody').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-op]');
+  if(!btn) return;
+  const op = btn.dataset.op;
+  const card = btn.closest('.stage-card[data-id]');
+  if(!card) return;
+  const id = Number(card.dataset.id);
+  const idx = stages.findIndex(s=>s.id === id);
+  if(idx < 0) return;
+
+  if(op === 'del'){
+    stages.splice(idx, 1);
+    renderStages();
+  } else if(op === 'dup'){
+    // 段を複製してIDを新規発行し、直下に挿入
+    const clone = Object.assign({}, stages[idx], {id: stageIdCounter++});
+    stages.splice(idx + 1, 0, clone);
+    renderStages();
+  }
+});
+
+$('addStage').addEventListener('click', ()=>{
+  const maxTo = stages.length ? Math.max(...stages.map(s=>s.to)) : 0;
+  stages.push(newStage({from: maxTo, to: maxTo + 15}));
+  renderStages();
+});
+
+$('sortStages').addEventListener('click', ()=>{
+  stages.sort((a,b)=> a.from - b.from);
+  renderStages();
+});
+
+// ---------- File Save / Load ----------
+$('btnSave').addEventListener('click', ()=>{
+  const data = {
+    stages,
+    settings:{
+      poles: $('poles').value,
+      teethA: $('teethA').value,
+      teethB: $('teethB').value,
+      wheelDia: $('wheelDia').value,
+      baseFreq: $('baseFreq').value,
+      maxSpeed: $('maxSpeed').value,
+      humAmt: $('humAmt').value,
+      gearAmt: $('gearAmt').value,
+      hpCutoff: $('hpCutoff').value,
+      hpQ: $('hpQ').value,
+      lpCutoff: $('lpCutoff').value,
+      lpQ: $('lpQ').value,
+      peakFreq: $('peakFreq').value,
+      peakGain: $('peakGain').value,
+      peakQ: $('peakQ').value,
+      volume: $('volume').value,
+      level3On: $('level3On').checked,
+      humHarmonics: humHarmonics,
+      convolverOn: $('convolverOn').checked,
+      convolverPreset: $('convolverPreset').value,
+      convolverWet: $('convolverWet').value
+    }
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'vvvf.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+$('btnLoadTrigger').addEventListener('click', ()=> $('fileInput').click());
+$('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      stages = (data.stages||[]).map(s=>newStage(s));
+      if(data.settings){
+        const st = data.settings;
+        if(st.poles) $('poles').value = st.poles;
+        if(st.teethA) $('teethA').value = st.teethA;
+        if(st.teethB) $('teethB').value = st.teethB;
+        if(st.wheelDia) $('wheelDia').value = st.wheelDia;
+        if(st.baseFreq) $('baseFreq').value = st.baseFreq;
+        if(st.maxSpeed) $('maxSpeed').value = st.maxSpeed;
+        if(st.humAmt) $('humAmt').value = st.humAmt;
+        if(st.gearAmt) $('gearAmt').value = st.gearAmt;
+        if(st.hpCutoff){ $('hpCutoff').value = st.hpCutoff; $('hpCutoffVal').textContent = st.hpCutoff+'Hz'; }
+        if(st.hpQ){ $('hpQ').value = st.hpQ; $('hpQVal').textContent = (Number(st.hpQ)/100).toFixed(2); }
+        if(st.lpCutoff){ $('lpCutoff').value = st.lpCutoff; $('lpCutoffVal').textContent = st.lpCutoff+'Hz'; }
+        if(st.lpQ){ $('lpQ').value = st.lpQ; $('lpQVal').textContent = (Number(st.lpQ)/100).toFixed(2); }
+        if(st.peakFreq){ $('peakFreq').value = st.peakFreq; $('peakFreqVal').textContent = st.peakFreq+'Hz'; }
+        if(st.peakGain){ $('peakGain').value = st.peakGain; $('peakGainVal').textContent = st.peakGain+'%'; }
+        if(st.peakQ){ $('peakQ').value = st.peakQ; $('peakQVal').textContent = (Number(st.peakQ)/100).toFixed(2); }
+        if(st.volume) $('volume').value = st.volume;
+        if(typeof st.level3On==='boolean') $('level3On').checked = st.level3On;
+        if(Array.isArray(st.humHarmonics) && st.humHarmonics.length){
+          humHarmonics = st.humHarmonics.map(h=>({n: Math.max(0.1, Number(h.n)||1), g:Number(h.g)||0}));
+          renderHarmonicEditor();
+        }
+        if(typeof st.convolverOn==='boolean'){ $('convolverOn').checked = st.convolverOn; }
+        if(st.convolverPreset){ $('convolverPreset').value = st.convolverPreset; }
+        if(st.convolverWet){ $('convolverWet').value = st.convolverWet; $('convolverWetVal').textContent = st.convolverWet+'%'; }
+      }
+      renderStages();
+    }catch(err){
+      alert('読込に失敗しました: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ---------- Controller ----------
+const POWER_NOTCHES = ['OFF','P1','P2','P3','P4','P5'];
+const BRAKE_NOTCHES = ['OFF','B1','B2','B3','B4','B5','B6','B7','EB'];
+let currentPower = 0;
+let currentBrake = 0;
+
+function buildNotches(){
+  const pWrap = $('powerNotches');
+  POWER_NOTCHES.forEach((label,i)=>{
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', ()=>{ currentPower=i; currentBrake=0; refreshNotchUI(); });
+    pWrap.appendChild(b);
+  });
+  const bWrap = $('brakeNotches');
+  BRAKE_NOTCHES.forEach((label,i)=>{
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', ()=>{ currentBrake=i; currentPower=0; refreshNotchUI(); });
+    bWrap.appendChild(b);
+  });
+  refreshNotchUI();
+}
+function refreshNotchUI(){
+  [...$('powerNotches').children].forEach((b,i)=>b.classList.toggle('active', i===currentPower));
+  [...$('brakeNotches').children].forEach((b,i)=>b.classList.toggle('active', i===currentBrake));
+}
+buildNotches();
+
+$('hpCutoff').addEventListener('input', ()=>{ $('hpCutoffVal').textContent = $('hpCutoff').value+'Hz'; });
+$('lpCutoff').addEventListener('input', ()=>{ $('lpCutoffVal').textContent = $('lpCutoff').value+'Hz'; });
+$('hpQ').addEventListener('input', ()=>{ $('hpQVal').textContent = (Number($('hpQ').value)/100).toFixed(2); });
+$('lpQ').addEventListener('input', ()=>{ $('lpQVal').textContent = (Number($('lpQ').value)/100).toFixed(2); });
+$('peakFreq').addEventListener('input', ()=>{ $('peakFreqVal').textContent = $('peakFreq').value+'Hz'; });
+$('peakGain').addEventListener('input', ()=>{ $('peakGainVal').textContent = $('peakGain').value+'%'; });
+$('peakQ').addEventListener('input', ()=>{ $('peakQVal').textContent = (Number($('peakQ').value)/100).toFixed(2); });
+
+// ============================================================
+// 直流モーター モード UI
+// ============================================================
+function updateDcPanelVisibility(){
+  const on = $('dcMotorOn').checked;
+  $('dcMotorPanel').style.display = on ? '' : 'none';
+  const type = $('dcControlType').value;
+  $('dcResistancePanel').style.display   = (on && type==='resistance') ? '' : 'none';
+  $('dcArmChopperPanel').style.display   = (on && type==='chopperArm') ? '' : 'none';
+}
+$('dcMotorOn').addEventListener('change', updateDcPanelVisibility);
+$('dcControlType').addEventListener('change', updateDcPanelVisibility);
+updateDcPanelVisibility();
+
+['dcContactorAmt','dcArmChopAmt','dcRotNoise'].forEach(id=>{
+  const span = $(id.replace('Amt','Val').replace('Noise','NoiseVal'));
+  if($( id) && span) $( id).addEventListener('input', ()=>{ span.textContent = $( id).value+'%'; });
+});
+// 倍音バンク エディタ
+// ============================================================
+const DEFAULT_HARMONICS = [
+  {n:1, g:0.40}, {n:2, g:0.18}, {n:3, g:1.00},
+  {n:4, g:0.20}, {n:6, g:0.10}, {n:8, g:0.06}
+];
+let humHarmonics = DEFAULT_HARMONICS.map(h=>({...h}));
+
+function renderHarmonicEditor(){
+  const el = $('humHarmonicEditor');
+  el.innerHTML = humHarmonics.map((h,i)=>`
+    <div class="param-group" style="display:flex;align-items:center;gap:6px;padding:7px 10px;">
+      <span style="font-size:10px;color:var(--text-faint);min-width:14px;">${i+1}</span>
+      <span style="font-size:11px;color:var(--text-dim);">次数</span>
+      <input type="number" min="0.1" max="64" step="0.1" value="${h.n}" data-hi="${i}" data-hf="n"
+             style="width:52px;" title="倍音次数（小数可、例: 0.5, 1.5, 3.0）">
+      <span style="font-size:11px;color:var(--text-dim);">ゲイン</span>
+      <input type="number" min="-5" max="5" step="0.05" value="${h.g.toFixed(2)}" data-hi="${i}" data-hf="g"
+             style="width:54px;">
+      <button data-hd="${i}" style="padding:3px 8px;font-size:12px;color:var(--accent-3);border-color:rgba(255,107,107,0.3);border-radius:999px;">×</button>
+    </div>`).join('');
+}
+renderHarmonicEditor();
+
+$('humHarmonicEditor').addEventListener('change', e=>{
+  const inp = e.target;
+  if(inp.dataset.hi === undefined) return;
+  const i = Number(inp.dataset.hi);
+  const f = inp.dataset.hf;
+  if(f && humHarmonics[i]){
+    const v = parseFloat(inp.value);
+    if(isFinite(v)) humHarmonics[i][f] = (f==='n') ? Math.max(0.1, v) : v;
+  }
+});
+$('humHarmonicEditor').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-hd]');
+  if(!btn) return;
+  humHarmonics.splice(Number(btn.dataset.hd), 1);
+  renderHarmonicEditor();
+});
+$('addHarmonic').addEventListener('click', ()=>{
+  humHarmonics.push({n: (humHarmonics.length+1), g: 0.10});
+  renderHarmonicEditor();
+});
+$('resetHarmonics').addEventListener('click', ()=>{
+  humHarmonics = DEFAULT_HARMONICS.map(h=>({...h}));
+  renderHarmonicEditor();
+});
+
+// ============================================================
+// 畳み込みフィルター (Convolver)
+// ============================================================
+let convolverNode = null;
+let convolverDryNode = null;
+let convolverWetNode = null;
+let convolverEnabled = false;
+let convolverWetGain = null;
+let convolverDryGain = null;
+
+// Web Audio APIで合成した近似インパルス応答を生成
+function buildIR(preset){
+  if(!audioCtx) return null;
+  const sr = audioCtx.sampleRate;
+
+  // プリセット別パラメータ
+  const presets = {
+    cabin:      {dur:0.35, decay:2.8, lp:2800, diffusion:0.55},
+    tunnel:     {dur:1.80, decay:1.4, lp:5000, diffusion:0.80},
+    station:    {dur:0.90, decay:1.8, lp:4000, diffusion:0.70},
+    underfloor: {dur:0.12, decay:4.5, lp:1800, diffusion:0.35},
+  };
+  const cfg = presets[preset] || presets.cabin;
+  const len = Math.ceil(sr * cfg.dur);
+  const buf = audioCtx.createBuffer(2, len, sr);
+
+  for(let ch=0; ch<2; ch++){
+    const d = buf.getChannelData(ch);
+    for(let i=0; i<len; i++){
+      const t = i/sr;
+      const noise = (Math.random()*2-1);
+      // 指数減衰エンベロープ
+      const env = Math.exp(-cfg.decay * t);
+      // 拡散: 後部に行くほどランダム成分を増やす
+      const diff = cfg.diffusion * (1 - Math.exp(-t*6));
+      d[i] = noise * env * (1 - diff*0.5 + diff*(Math.random()*2-1)*0.5);
+    }
+    // ローパスで高域を丸める（簡易FIR: 3点移動平均を繰り返す）
+    const passes = Math.round(sr / cfg.lp / 2);
+    for(let p=0; p<Math.min(passes,12); p++){
+      for(let i=1; i<len-1; i++) d[i] = (d[i-1]+d[i]+d[i+1])/3;
+    }
+  }
+  return buf;
+}
+
+async function applyConvolver(){
+  if(!audioCtx || !masterGain) return;
+
+  // まず worklet → masterGain 間の接続だけをリセット
+  try{ workletNode.disconnect(); }catch(e){}
+  if(convolverNode){ try{ convolverNode.disconnect(); }catch(e){} convolverNode=null; }
+  if(convolverDryGain){ try{ convolverDryGain.disconnect(); }catch(e){} convolverDryGain=null; }
+  if(convolverWetGain){ try{ convolverWetGain.disconnect(); }catch(e){} convolverWetGain=null; }
+
+  const preset = $('convolverPreset').value;
+  const wet = Number($('convolverWet').value)/100;
+  convolverEnabled = $('convolverOn').checked;
+
+  if(!convolverEnabled){
+    // バイパス: worklet → masterGain（masterGain以降は常に固定）
+    workletNode.connect(masterGain);
+    return;
+  }
+
+  // IR取得
+  let irBuf;
+  if(preset === 'custom'){
+    const f = $('irFile').files[0];
+    if(!f){ alert('IRファイルを選択してください'); workletNode.connect(masterGain); return; }
+    const ab = await f.arrayBuffer();
+    irBuf = await audioCtx.decodeAudioData(ab);
+  } else {
+    irBuf = buildIR(preset);
+  }
+  if(!irBuf){ workletNode.connect(masterGain); return; }
+
+  convolverNode = audioCtx.createConvolver();
+  convolverNode.buffer = irBuf;
+  convolverDryGain = audioCtx.createGain();
+  convolverWetGain = audioCtx.createGain();
+  convolverDryGain.gain.value = 1 - wet;
+  convolverWetGain.gain.value = wet;
+
+  // worklet → dry/wet → masterGain（masterGain以降は不変）
+  workletNode.connect(convolverDryGain);
+  workletNode.connect(convolverNode);
+  convolverNode.connect(convolverWetGain);
+  convolverDryGain.connect(masterGain);
+  convolverWetGain.connect(masterGain);
+}
+
+$('convolverOn').addEventListener('change', ()=>{
+  if(masterGain) applyConvolver();   // 音声起動済みのときのみ即反映
+  // 未起動の場合は btnStart 押下後に initAudio() の末尾で applyConvolver() が呼ばれる
+});
+$('convolverPreset').addEventListener('change', ()=>{
+  $('customIrRow').style.display = $('convolverPreset').value==='custom' ? '' : 'none';
+  if(masterGain && $('convolverOn').checked) applyConvolver();
+});
+$('convolverWet').addEventListener('input', ()=>{
+  $('convolverWetVal').textContent = $('convolverWet').value+'%';
+  const wet = Number($('convolverWet').value)/100;
+  if(convolverDryGain) convolverDryGain.gain.value = 1-wet;
+  if(convolverWetGain) convolverWetGain.gain.value = wet;
+});
+$('irFile').addEventListener('change', ()=>{ if($('convolverOn').checked) applyConvolver(); });
+
+// ---------- Physics Simulator ----------
+let speed = 0;
+let lastT = performance.now();
+let autoRun = false;
+let autoPhaseAccel = true;
+
+$('btnAuto').addEventListener('click', ()=>{
+  autoRun = !autoRun;
+  $('btnAuto').classList.toggle('primary', autoRun);
+  $('btnAuto').textContent = autoRun ? '■ 自動走行停止' : '自動走行デモ';
+});
+
+$('btnStop').addEventListener('click', ()=>{
+  currentPower=0; currentBrake=8; refreshNotchUI(); autoRun=false;
+  $('btnAuto').classList.remove('primary'); $('btnAuto').textContent='自動走行デモ';
+});
+
+function physicsStep(now){
+  const dt = Math.min(0.1,(now-lastT)/1000);
+  lastT = now;
+  const maxSpeed = Number($('maxSpeed').value)||120;
+
+  if($('manualMode').checked){
+    speed = Number($('manualSpeed').value);
+  } else {
+    if(autoRun){
+      if(autoPhaseAccel){
+        currentPower = 4; currentBrake = 0;
+        if(speed >= maxSpeed*0.9) autoPhaseAccel = false;
+      } else {
+        currentPower = 0; currentBrake = 5;
+        if(speed <= 0.5){ autoPhaseAccel = true; }
+      }
+      refreshNotchUI();
+    }
+    let accel = 0;
+    if(currentPower>0){
+      const aKmhs = Number($('accelP'+currentPower)?.value) || [0,1.0,1.6,2.2,3.0,4.0][currentPower];
+      const taper = clamp(1 - speed/maxSpeed, 0.05, 1);
+      accel = aKmhs * taper; // km/h/s → km/h per s
+    } else if(currentBrake>0){
+      let dKmhs;
+      if(currentBrake === 8) dKmhs = Number($('accelEB')?.value) || 7.0;
+      else dKmhs = Number($('accelB'+currentBrake)?.value) || [0,1.0,1.6,2.3,3.0,3.8,4.6,5.5][currentBrake];
+      accel = -dKmhs;
+    } else {
+      accel = -(Number($('accelCoast')?.value) || 0.4);
+    }
+    speed = clamp(speed + accel*dt, 0, maxSpeed);
+  }
+  $('speedNum').textContent = speed.toFixed(1);
+  requestAnimationFrame(physicsStep);
+  updateAudioParams();
+}
+requestAnimationFrame(physicsStep);
+
+function computeMotorState(){
+  const teethA = Math.max(1, Number($('teethA').value));
+  const teethB = Math.max(1, Number($('teethB').value));
+  const wheelDia = Math.max(1, Number($('wheelDia').value))/1000;
+  const poles = Number($('poles').value);
+  const polePairs = poles/2;
+
+  const speedMps = speed/3.6;
+  const wheelRpm = speedMps>0 ? (speedMps/(Math.PI*wheelDia))*60 : 0;
+  const motorRpm = wheelRpm * (teethB/teethA);
+  const motorHzMech = motorRpm/60;
+  const elecFreq = motorHzMech * polePairs;
+  const meshFreq = motorHzMech * teethA;
+  return {elecFreq, motorRpm, meshFreq};
+}
+
+function findActiveStage(){
+  for(const s of stages){
+    if(speed >= s.from && speed < s.to) return s;
+    if(s.to>=Number($('maxSpeed').value) && speed>=s.to) return s;
+  }
+  return null;
+}
+
+// ---------- Web Audio API Engine ----------
+let audioCtx=null, workletNode=null, analyser=null, destNode=null, mediaRecorder=null, masterGain=null;
+let recordedChunks = [];
+let isRecording = false;
+
+const WORKLET_CODE = `
+class SVF {
+  constructor(){ this.low=0; this.band=0; this.high=0; }
+  _step(input, freq, q, sr){
+    if(!isFinite(input)) input = 0;
+    freq = (isFinite(freq) && freq>0) ? Math.min(freq, sr*0.49) : 20;
+    q = (isFinite(q) && q>0.05) ? q : 0.5;
+    const f = 2*Math.sin(Math.min(1.35, Math.PI*freq/sr));
+    const qInv = 1/Math.max(0.2,q);
+    this.low += f*this.band;
+    this.high = input - this.low - qInv*this.band;
+    this.band += f*this.high;
+    if(!isFinite(this.low))  this.low=0;
+    if(!isFinite(this.band)) this.band=0;
+    if(!isFinite(this.high)) this.high=0;
+  }
+  lowpass(input, freq, q, sr){ this._step(input,freq,q,sr); return this.low; }
+  bandpass(input, freq, q, sr){ this._step(input,freq,q,sr); return this.band; }
+  highpass(input, freq, q, sr){ this._step(input,freq,q,sr); return this.high; }
+}
+
+class DelayLine {
+  constructor(size){
+    this.buf = new Float32Array(Math.max(1, size));
+    this.idx = 0;
+  }
+  process(input, feedback){
+    if(!isFinite(input)) input = 0;
+    if(!isFinite(feedback)) feedback = 0;
+    feedback = Math.max(-0.95, Math.min(0.95, feedback)); // guarantee decay, never runaway
+    const out = this.buf[this.idx];
+    const safeOut = isFinite(out) ? out : 0;
+    this.buf[this.idx] = input + safeOut * feedback;
+    if(!isFinite(this.buf[this.idx])) this.buf[this.idx] = 0;
+    this.idx = (this.idx + 1) % this.buf.length;
+    return safeOut;
+  }
+}
+
+class VVVFProcessor extends AudioWorkletProcessor {
+  constructor(){
+    super();
+    const sr = sampleRate;
+    this.phaseA=0; this.pmsmPhase=0; this.triPhase=0; this.gearPhase=0;
+    this.curMod=0; this.curVol=0;
+    this.spreadNoise=0; this.microNoise=0;
+    this.noiseLp=0; this.windLp=0;
+    // 直流モーター用状態
+    this.dcPhase=0; this.dcChopPhase=0; this.dcContactorTimer=0;
+    this.dcNoiseL1=0; this.dcNoiseL2=0;
+
+    this.svfBody = new SVF();
+    this.svfForm1 = new SVF();
+    this.svfForm2 = new SVF();
+    this.svfCarrier = new SVF();
+    this.svfGearMesh = new SVF();
+    this.svfMaster = new SVF();
+    this.svfPeak = new SVF();
+    this.svfMasterHP = new SVF();
+
+    // 空間の広がり（アンビエンス）コムフィルタ
+    this.combL1 = new DelayLine(Math.floor(sr*0.0113));
+    this.combL2 = new DelayLine(Math.floor(sr*0.0271));
+    this.combR1 = new DelayLine(Math.floor(sr*0.0129));
+    this.combR2 = new DelayLine(Math.floor(sr*0.0243));
+
+    this.p = {
+      elecFreq:0, mode:'async', carrierBase:160, pulseNumber:15,
+      modIndex:0, pmsmOn:false, pmsmFreq:1500,
+      spreadMode:'off', spreadHz:0, spreadRate:4,
+      thirdOn:false, thirdPct:0,
+      biasLower:-1, biasUpper:1,
+      level3On:false,
+      meshFreq:0, gearAmt:0.35, humAmt:0.75, speedFrac:0,
+      lpCutoff:6500, lpQ:0.7, hpCutoff:50, hpQ:0.7,
+      peakFreq:1200, peakGain:0, peakQ:1.4,
+      dcOn:false, dcType:'resistance', dcResNotch:5,
+      dcContactorAmt:0,
+      dcArmChopHz0:100, dcArmChopHz1:600, dcArmChopAmt:0, dcRotNoise:0,
+      volume:0.65
+    };
+    // パラメータの安全範囲。メインスレッドから来る値がこの範囲外・非数値
+    // だった場合は既存値を維持し、絶対にフィルタ内部状態へ異常値を
+    // 流し込まない（これが「ガービビビピー」異音の根本原因だった）。
+    this.PARAM_LIMITS = {
+      elecFreq:[0,400], carrierBase:[10,9000], pulseNumber:[1,199],
+      modIndex:[0,1.3], pmsmFreq:[10,9000],
+      spreadHz:[0,4000], spreadRate:[0.05,40],
+      thirdPct:[0,50], biasLower:[-1,1], biasUpper:[-1,1],
+      meshFreq:[0,3000], gearAmt:[0,1], humAmt:[0,1], speedFrac:[0,1],
+      lpCutoff:[200,12000], lpQ:[0.3,4], hpCutoff:[10,1000], hpQ:[0.3,4],
+      peakFreq:[80,10000], peakGain:[-1,1], peakQ:[0.3,8],
+      dcResNotch:[1,7],
+      dcContactorAmt:[0,1], dcArmChopHz0:[20,2000],
+      dcArmChopHz1:[50,5000], dcArmChopAmt:[0,1], dcRotNoise:[0,1],
+      volume:[0,1.2]
+    };
+    this.port.onmessage = (e)=>{
+      const data = e.data || {};
+      for(const key in data){
+        let v = data[key];
+        const lim = this.PARAM_LIMITS[key];
+        if(lim){
+          if(typeof v !== 'number' || !isFinite(v)) continue;
+          v = Math.min(lim[1], Math.max(lim[0], v));
+          this.p[key] = v;
+        } else if(key === 'humHarmonics' && Array.isArray(v)){
+          this.p[key] = v.map(h=>({
+            n: Math.max(0.1, Math.min(64, isFinite(Number(h.n)) ? Number(h.n) : 1)),
+            g: Math.max(-5, Math.min(5, isFinite(Number(h.g)) ? Number(h.g) : 0))
+          }));
+        } else {
+          // booleans / strings (mode, spreadMode, pmsmOn, level3On, etc.)
+          this.p[key] = v;
+        }
+      }
+    };
+  }
+
+  // 毎ブロック、全ての永続状態変数（位相・フィルタ内部値）を検査し、
+  // 万一どこかでNaN/Infinityが紛れ込んでも即座に0へ復帰させることで、
+  // 異音が「鳴り続ける」ことを構造的に防止する。
+  sanitizeState(){
+    const fields = ['phaseA','pmsmPhase','triPhase','gearPhase','curMod','curVol',
+                     'spreadNoise','microNoise','noiseLp','windLp','lfoPhase',
+                     'hopTimer','hopTarget','hopCurrent','toggleSm',
+                     'dcPhase','dcChopPhase','dcContactorTimer','dcNoiseL1','dcNoiseL2'];
+    for(const f of fields){
+      if(!isFinite(this[f])) this[f] = 0;
+    }
+  }
+
+  // 角度制御系（パルス切/SHE/CHM/HO）用の階段波形。
+  // 与えられた四分の一周期の角度テーブル(度)を使い、象限対称・半波対称の
+  // ステップ波形(-1/+1)を生成する。角度が空配列なら基本の矩形波(六段通電)。
+  steppedWave(phaseFrac, angles){
+    let deg = ((phaseFrac*360) % 360 + 360) % 360;
+    let sign = 1;
+    let q = deg;
+    if(q>=180){ q-=180; sign=-1; }
+    if(q>=90){ q=180-q; }
+    let level = 1;
+    for(const a of angles){ if(q>=a) level=-level; }
+    return level*sign;
+  }
+
+  process(inputs, outputs){
+    this.sanitizeState();
+    const out = outputs[0];
+    const chL = out[0], chR = out[1];
+    const p = this.p;
+    const sr = sampleRate;
+
+    for(let i=0; i<chL.length; i++){
+      this.curMod += (p.modIndex - this.curMod)*0.01;
+      this.curVol += (p.volume - this.curVol)*0.01;
+
+      // 微小なアナログ的ゆらぎ
+      this.microNoise += ((Math.random()*2-1) - this.microNoise)*0.2;
+      const microWobble = 1 + this.microNoise * 0.002;
+
+      this.phaseA += (p.elecFreq * microWobble)/sr;
+      if(this.phaseA>=1) this.phaseA-=1;
+
+      const refA = Math.sin(2*Math.PI*this.phaseA);
+      const refB = Math.sin(2*Math.PI*(this.phaseA-1/3));
+      const refC = Math.sin(2*Math.PI*(this.phaseA+1/3));
+
+      // 3次高調波重畳: 基本波に共通の3倍波を加算し、変調波形を平坦化させる
+      // （実機の3次高調波重畳PWMと同じ原理。線間電圧では理想的には打ち消し合うが、
+      //   本シミュレータの非線形（soft-tanh）比較器を通ることで可聴帯域にわずかな
+      //   質感の違いとして現れる）
+      let thirdInj = 0;
+      if(p.thirdOn && p.thirdPct > 0){
+        thirdInj = (p.thirdPct/100) * 0.33 * Math.sin(6*Math.PI*this.phaseA);
+      }
+
+      let injA=0, injB=0, injC=0;
+      if(p.pmsmOn && p.speedFrac>0.005){
+        this.pmsmPhase += p.pmsmFreq/sr;
+        if(this.pmsmPhase>=1) this.pmsmPhase-=1;
+        const depth = 0.15;
+        injA = depth * Math.sin(2*Math.PI*this.pmsmPhase);
+        injB = depth * Math.sin(2*Math.PI*(this.pmsmPhase-1/3));
+        injC = depth * Math.sin(2*Math.PI*(this.pmsmPhase+1/3));
+      }
+
+      // ダイポーラバイアス: 変調波を非対称にクリップ（上限/下限が別々）
+      const bLo = (p.biasLower!=null) ? p.biasLower : -1;
+      const bHi = (p.biasUpper!=null) ? p.biasUpper : 1;
+      const targetA = Math.min(bHi, Math.max(bLo, this.curMod*refA + injA + thirdInj));
+      const targetB = Math.min(bHi, Math.max(bLo, this.curMod*refB + injB + thirdInj));
+      const targetC = Math.min(bHi, Math.max(bLo, this.curMod*refC + injC + thirdInj));
+
+      let carrierFreq = 0;
+      if(p.mode === 'sync' || p.mode === 'she' || p.mode === 'chm' || p.mode === 'ho'){
+        carrierFreq = Math.max(10, p.elecFreq * p.pulseNumber);
+      } else if(p.mode === 'off'){
+        carrierFreq = Math.max(10, p.elecFreq);
+      } else {
+        carrierFreq = Math.max(10, p.carrierBase);
+      }
+
+      if(p.spreadHz > 0 && p.mode === 'async'){
+        switch(p.spreadMode){
+          case 'random': {
+            // ランダム拡散: 連続的なゆらぎ（なめらかなランダムウォーク）
+            // 0.15係数 = オーディオレートで毎サンプル更新するので十分高速
+            this.spreadNoise += ((Math.random()*2-1) - this.spreadNoise)*0.15;
+            carrierFreq += this.spreadNoise * p.spreadHz;
+            break;
+          }
+          case 'randomHop': {
+            // ランダム切替拡散: 一定間隔で離散的な周波数へジャンプ
+            // spreadRate をオーディオレート換算（÷sr → 毎サンプル加算）
+            this.hopTimer = (this.hopTimer||0) + p.spreadRate/sr;
+            if(this.hopTimer >= 1){
+              this.hopTimer = 0;
+              this.hopTarget = (Math.random()*2-1);
+            }
+            if(this.hopCurrent===undefined) this.hopCurrent=0;
+            // ジャンプを素早く反映させる（0.5=1サンプルで半分追従）
+            this.hopCurrent += ((this.hopTarget||0) - this.hopCurrent) * 0.55;
+            carrierFreq += this.hopCurrent * p.spreadHz;
+            break;
+          }
+          case 'continuous': {
+            // 連続拡散: LFOによる往復スイープ（高速：spreadRate Hz）
+            this.lfoPhase += p.spreadRate/sr;
+            if(this.lfoPhase>=1) this.lfoPhase-=1;
+            carrierFreq += Math.sin(2*Math.PI*this.lfoPhase) * p.spreadHz;
+            break;
+          }
+          case 'toggle': {
+            // 切替拡散: 2値間を spreadRate Hz で交互切替（矩形LFO）
+            this.lfoPhase += p.spreadRate/sr;
+            if(this.lfoPhase>=1) this.lfoPhase-=1;
+            const sq = this.lfoPhase < 0.5 ? 1 : -1;
+            // 切り替わりをわずかに滑らかにしてクリックを防ぐ
+            this.toggleSm = (this.toggleSm===undefined) ? sq : this.toggleSm + (sq-this.toggleSm)*0.25;
+            carrierFreq += this.toggleSm * p.spreadHz;
+            break;
+          }
+          default: break;
+        }
+      }
+      carrierFreq = Math.max(10, carrierFreq * microWobble);
+
+      // ---- 波形生成: モードによって分岐 ----
+      // キャリア位相を常に進める（モード切替時の状態連続性を保つ）
+      this.triPhase += carrierFreq/sr;
+      if(this.triPhase>=1) this.triPhase-=1;
+
+      const K = 8.5;
+      let pwmSig;
+      const tri = 4*Math.abs(this.triPhase - 0.5) - 1;
+
+      if(p.mode === 'off'){
+        // パルス切: キャリアなし。基本波位相から直接ソフト矩形波を生成。
+        const sqA = Math.tanh(Math.sin(2*Math.PI*this.phaseA)*8);
+        const sqB = Math.tanh(Math.sin(2*Math.PI*(this.phaseA-1/3))*8);
+        const sqC = Math.tanh(Math.sin(2*Math.PI*(this.phaseA+1/3))*8);
+        pwmSig = ((sqA-sqB)+(sqB-sqC))*0.25*Math.max(0,this.curMod);
+
+      } else if(p.mode === 'she' || p.mode === 'chm' || p.mode === 'ho'){
+        // SHE/CHM/HO: 1周期内の決められた角度で切替える階段波形を生成する。
+        // N パルスモードでは 1/4 周期に (N-1)/2 個の切替角がある。
+        // 各モードで角度テーブルが異なる（いずれも度数で定義し、0〜90°の範囲）。
+        //
+        // SHE (Selective Harmonic Elimination):
+        //   5次消去: 23.6°
+        //   5,7次消去: 17.7°, 37.4°
+        //   5,7,11次消去: 14.2°, 28.5°, 42.8°
+        //   5,7,11,13次消去: 11.8°, 23.6°, 35.4°, 47.1°
+        //   5,7,11,13,17次: 10.1°, 20.2°, 30.3°, 40.4°, 50.5°
+        //   (奇数次なので 3パルス→1角, 5パルス→2角, 7パルス→3角...)
+        //
+        // CHM (Current Harmonic Minimization):
+        //   電流高調波最小化。SHEより角度が内側（小さめ）。
+        //
+        // HO (High Order):
+        //   高次高調波低減重視。角度が外側（大きめ）。
+        //
+        // N パルスモード → (N-1)/2 個の角度を使う。N が偶数の場合はNを奇数に丸める。
+        const n = Math.max(1, Math.round(p.pulseNumber));
+        const notches = Math.floor((n - 1) / 2); // 使用する切替角の数
+
+        const SHE_ANGLES = [23.6, 17.7, 14.2, 11.8, 10.1, 8.8, 7.8, 7.0, 6.3, 5.7];
+        const CHM_ANGLES = [20.0, 15.0, 12.0, 10.0,  8.6,  7.5, 6.6, 5.9, 5.3, 4.8];
+        const HO_ANGLES  = [27.0, 21.0, 17.5, 14.8, 12.8, 11.2, 9.9, 8.9, 8.1, 7.4];
+
+        let baseAngles;
+        if(p.mode === 'she') baseAngles = SHE_ANGLES;
+        else if(p.mode === 'chm') baseAngles = CHM_ANGLES;
+        else baseAngles = HO_ANGLES;
+
+        // 角度テーブルを組み立て: notches 個の角度を均等間隔で配置し、
+        // baseAngles[0] を最初のノッチ、以降を均等に広げる
+        const angles = [];
+        if(notches > 0){
+          const step = 90 / (notches + 1);
+          for(let k = 0; k < notches && k < baseAngles.length; k++){
+            // SHE的配置: 最初のノッチ基準から均等に並べる
+            angles.push(step * (k + 1) - baseAngles[Math.min(k, baseAngles.length-1)] * 0.5);
+          }
+        }
+
+        const stepA = this.steppedWave(this.phaseA,         angles);
+        const stepB = this.steppedWave(this.phaseA - 1/3,   angles);
+        const stepC = this.steppedWave(this.phaseA + 1/3,   angles);
+        pwmSig = ((stepA-stepB)+(stepB-stepC)) * 0.25 * Math.max(0, this.curMod);
+
+      } else {
+        let pwmA, pwmB, pwmC;
+        if(p.level3On){
+          const triHi=(tri+1)/2; const triLo=(tri-1)/2;
+          const up=(t)=>Math.tanh((t-triHi)*K);
+          const dn=(t)=>Math.tanh((t-triLo)*K);
+          pwmA=(up(targetA)+dn(targetA))/2;
+          pwmB=(up(targetB)+dn(targetB))/2;
+          pwmC=(up(targetC)+dn(targetC))/2;
+        } else {
+          pwmA=Math.tanh((targetA-tri)*K);
+          pwmB=Math.tanh((targetB-tri)*K);
+          pwmC=Math.tanh((targetC-tri)*K);
+        }
+        pwmSig = ((pwmA-pwmB)+(pwmB-pwmC))*0.25;
+      } // end async/sync branch
+      if(!isFinite(pwmSig)) pwmSig = 0;
+
+      // ---- 音響整形: モード別フィルタプリセット ----
+      let sig_out = 0;
+      if(p.mode === 'async'){
+        const bodyCut = Math.min(8000, Math.max(300, p.carrierBase * 3.0));
+        sig_out = this.svfBody.lowpass(pwmSig, bodyCut, 0.7, sr);
+        const carrierTone = this.svfCarrier.bandpass(pwmSig, Math.min(8000, Math.max(80, p.carrierBase)), 2.8, sr);
+        sig_out = sig_out * 0.4 + carrierTone * 1.1;
+      } else if(p.mode === 'off'){
+        sig_out = this.svfBody.lowpass(pwmSig, Math.min(4000, Math.max(200, p.elecFreq*8)), 0.65, sr);
+      } else if(p.mode === 'she' || p.mode === 'chm' || p.mode === 'ho'){
+        // 階段波形: 倍音構成が sync PWM と異なるのでフィルタ特性を変える
+        // SHE: 特定次高調波がノッチで除去され、残った倍音がより際立つ → 高Q
+        // CHM: 電流高調波最小化 → 柔らかめ / HO: 高次重視 → やや明るめ
+        const baseFreq = Math.max(80, p.elecFreq);
+        const bodyCut = Math.min(8000, Math.max(300, baseFreq * 12));
+        sig_out = this.svfBody.lowpass(pwmSig, bodyCut, 0.6, sr);
+        const fQ1 = p.mode==='she' ? 3.8 : p.mode==='ho' ? 3.0 : 2.4;
+        const fQ2 = p.mode==='she' ? 3.0 : p.mode==='ho' ? 2.4 : 1.8;
+        const fMult = p.mode==='ho' ? 2.0 : 1.4;
+        const f1 = Math.min(5000, Math.max(200, baseFreq * 4));
+        const f2 = Math.min(8000, Math.max(400, baseFreq * 4 * fMult));
+        const form1 = this.svfForm1.bandpass(sig_out, f1, fQ1, sr) * 0.55;
+        const form2 = this.svfForm2.bandpass(sig_out, f2, fQ2, sr) * 0.30;
+        sig_out = sig_out * 0.6 + form1 + form2;
+      } else {
+        // sync
+        const refFreq = Math.max(200, carrierFreq);
+        const bodyCut = Math.min(8000, Math.max(400, refFreq * 2.2));
+        sig_out = this.svfBody.lowpass(pwmSig, bodyCut, 0.7, sr);
+        const form1 = this.svfForm1.bandpass(sig_out, Math.min(4000, Math.max(500, refFreq)), 2.2, sr) * 0.45;
+        const form2 = this.svfForm2.bandpass(sig_out, Math.min(6000, Math.max(1000, refFreq*1.5)), 1.8, sr) * 0.25;
+        sig_out = sig_out * 0.7 + form1 + form2;
+      }
+
+      // モーター倍音: UIから設定された各次倍音を合成
+      let hum = 0;
+      if(p.humAmt > 0.01 && p.speedFrac > 0.003 && p.humHarmonics && p.humHarmonics.length){
+        let raw = 0;
+        for(const {n, g} of p.humHarmonics){
+          if(n>0 && isFinite(g)) raw += Math.sin(2*Math.PI*n*this.phaseA) * g;
+        }
+        hum = raw * p.humAmt * Math.pow(Math.max(0.1, this.curMod), 0.4);
+      } else if(p.humAmt > 0.01 && p.speedFrac > 0.003){
+        // フォールバック（humHarmonicsが未設定の場合）
+        hum = (Math.sin(2*Math.PI*this.phaseA)*0.4 +
+               Math.sin(4*Math.PI*this.phaseA)*1.1 +
+               Math.sin(8*Math.PI*this.phaseA)*0.6 +
+               Math.sin(12*Math.PI*this.phaseA)*0.25) * p.humAmt * Math.pow(Math.max(0.1, this.curMod), 0.4);
+      }
+
+      // リアルな車内走行音・歯車かみ合い音（ギヤ鳴り）
+      let gear = 0;
+      if(p.gearAmt > 0.01 && p.speedFrac > 0.003){
+        this.gearPhase += p.meshFreq/sr;
+        if(this.gearPhase>=1) this.gearPhase-=1;
+        
+        // 歯車周波数の強調
+        let rawMesh = Math.sin(2*Math.PI*this.gearPhase) + Math.sin(4*Math.PI*this.gearPhase)*0.3;
+        const meshRes = Math.min(5000, Math.max(100, p.meshFreq));
+        const meshTone = this.svfGearMesh.bandpass(rawMesh, meshRes, 2.5, sr) * 0.6 + rawMesh * 0.15;
+
+        // レール走行転がりノイズ
+        const white = Math.random()*2-1;
+        this.noiseLp += (white - this.noiseLp) * 0.04;
+        this.windLp += (white - this.windLp) * 0.01;
+        const rolling = this.noiseLp * 0.6 + this.windLp * 0.4;
+
+        gear = (meshTone * 0.45 + rolling * 0.55) * p.gearAmt * Math.pow(p.speedFrac, 0.85);
+      }
+
+      const speedGate = p.speedFrac > 0.002 ? 1 : 0;
+      let mix = 0;
+
+      if(p.dcOn && speedGate > 0){
+        // ======= 直流モーター サウンド合成 =======
+        // 電機子リップル周波数（整流子ハム）: モーター回転数に比例
+        const dcMotorHz = Math.max(5, p.elecFreq * 2);
+        this.dcPhase += dcMotorHz / sr;
+        if(this.dcPhase >= 1) this.dcPhase -= 1;
+
+        // 整流子ハム: 倍音バンクを使って音色をVVVFモードと共有できるようにする。
+        // p.humHarmonics を dc の位相で合成し、humAmt を倍音の強さとして使う。
+        // これにより倍音設定が直流モードにも明確に反映される。
+        let dcHum = 0;
+        if(p.humHarmonics && p.humHarmonics.length){
+          for(const {n, g} of p.humHarmonics){
+            if(n > 0 && isFinite(g)) dcHum += Math.sin(2*Math.PI*n*this.dcPhase) * g;
+          }
+        } else {
+          // フォールバック: のこぎり波的な整流子ハム
+          dcHum = (this.dcPhase * 2 - 1) * 0.7
+                + Math.sin(2*Math.PI*this.dcPhase) * 0.25;
+        }
+        // humAmt を倍音ゲインに直接かける（VVVFモードと同じスケール感）
+        dcHum *= p.humAmt * Math.pow(Math.max(0.05, p.speedFrac), 0.5) * 1.2;
+        if(!isFinite(dcHum)) dcHum = 0;
+
+        let dcChopSig = 0;
+        if(p.dcType === 'resistance'){
+          // 抵抗制御: 速度・ノッチに応じた段階的なハム変化 + 接触器クリック
+          const notchFrac = Math.min(1, p.speedFrac * p.dcResNotch);
+          const resistHum = dcHum * (0.5 + 0.5 * notchFrac);
+
+          // 接触器音: 速度が低いほど高頻度（起動時の連続投入を模倣）
+          this.dcContactorTimer += 1/sr;
+          const clickInterval = 0.5 + 1.2 * p.speedFrac;
+          let click = 0;
+          if(this.dcContactorTimer > clickInterval){
+            this.dcContactorTimer = 0;
+            click = (Math.random()*2-1) * p.dcContactorAmt * 0.8;
+          }
+          // 低域通過でクリックを「バン」感のある鈍い衝撃に整形
+          this.dcNoiseL1 += (click - this.dcNoiseL1) * 0.18;
+          dcChopSig = resistHum + this.dcNoiseL1;
+
+        } else if(p.dcType === 'chopperArm'){
+          // 電機子チョッパ: 低速→高速でチョッパ周波数が変化するのこぎり波ベース
+          // のこぎり波: 位相を直接 2φ-1 として使う（負から正へのランプ）
+          const armHz = Math.max(10, p.dcArmChopHz0 + (p.dcArmChopHz1 - p.dcArmChopHz0) * p.speedFrac);
+          this.dcChopPhase += armHz / sr;
+          if(this.dcChopPhase >= 1) this.dcChopPhase -= 1;
+
+          // のこぎり波 (-1 → +1)
+          const saw = this.dcChopPhase * 2 - 1;
+          // ハイパスでDC成分を除去してトーン感を出す（一階差分近似）
+          this.dcNoiseL1 += (saw - this.dcNoiseL1) * 0.3;
+          const sawTone = saw - this.dcNoiseL1;
+
+          // 倍音バンクから整流子ハムも混ぜてリアリティを上げる
+          dcChopSig = sawTone * p.dcArmChopAmt * 0.75 + dcHum * 0.6;
+        }
+        if(!isFinite(dcChopSig)) dcChopSig = 0;
+
+        // モーター回転ノイズ（ブラシ接触ノイズ・風切り音）
+        const white = Math.random()*2-1;
+        this.dcNoiseL2 += (white - this.dcNoiseL2) * 0.08;
+        const rotNoise = this.dcNoiseL2 * p.dcRotNoise * Math.sqrt(p.speedFrac);
+
+        mix = (dcChopSig + rotNoise + gear * 0.4) * speedGate;
+
+      } else {
+        mix = (sig_out * 0.75 + hum * 0.7 + gear * 0.4) * speedGate;
+      }
+
+      mix = this.svfMasterHP.highpass(mix, p.hpCutoff, p.hpQ, sr);
+      mix = this.svfMaster.lowpass(mix, p.lpCutoff, p.lpQ, sr);
+
+      // パラメトリック・ピーク/ノッチ: ゲイン正で強調、負で削る(ノッチ)
+      if(Math.abs(p.peakGain) > 0.005){
+        const peaked = this.svfPeak.bandpass(mix, p.peakFreq, p.peakQ, sr);
+        mix = mix + peaked * p.peakGain * 2.2;
+      }
+      mix = Math.tanh(mix * 1.15);
+
+      if(!isFinite(mix)) mix = 0;
+      let wetLraw = this.combL2.process(this.combL1.process(mix, 0.32), 0.28) * 0.20;
+      let wetRraw = this.combR2.process(this.combR1.process(mix, 0.30), 0.27) * 0.20;
+      if(!isFinite(wetLraw)) wetLraw = 0;
+      if(!isFinite(wetRraw)) wetRraw = 0;
+
+      let outL = (mix + wetLraw) * this.curVol;
+      let outR = (mix + wetRraw) * this.curVol;
+      if(!isFinite(outL)) outL = 0;
+      if(!isFinite(outR)) outR = 0;
+      outL = Math.max(-1, Math.min(1, outL));
+      outR = Math.max(-1, Math.min(1, outR));
+
+      chL[i] = outL;
+      if(chR) chR[i] = outR;
+    }
+    return true;
+  }
+}
+registerProcessor('vvvf-processor', VVVFProcessor);
+`;
+
+async function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const workletUrl = 'data:application/javascript;charset=utf-8,' + encodeURIComponent(WORKLET_CODE);
+  await audioCtx.audioWorklet.addModule(workletUrl);
+
+  workletNode = new AudioWorkletNode(audioCtx, 'vvvf-processor', {
+    numberOfInputs:0, numberOfOutputs:1, outputChannelCount:[2]
+  });
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+
+  // masterGain is the single output hub: worklet → masterGain → [analyser, destNode]
+  // applyConvolver() inserts/removes nodes between worklet and masterGain,
+  // but masterGain → analyser/destNode never changes, so recording always works.
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 1;
+
+  destNode = audioCtx.createMediaStreamDestination();
+
+  // Default (no convolver): worklet → masterGain → analyser → destination
+  //                                              → destNode (always connected)
+  workletNode.connect(masterGain);
+  masterGain.connect(analyser);
+  masterGain.connect(destNode);
+  analyser.connect(audioCtx.destination);
+
+  $('btnRecord').disabled = false;
+  drawScope();
+  // 音声グラフが確立された後にコンボルバーを適用（起動前にトグルを操作した場合も確実に反映）
+  await applyConvolver();
+}
+
+$('btnStart').addEventListener('click', async ()=>{
+  await initAudio();
+  if(audioCtx.state==='suspended') await audioCtx.resume();
+  $('btnStart').textContent = '🔊 稼働中';
+  $('btnStart').classList.add('primary');
+});
+
+// 録音機能
+$('btnRecord').addEventListener('click', ()=>{
+  if(!isRecording){
+    recordedChunks = [];
+    const options = MediaRecorder.isTypeSupported('audio/webm') ? {mimeType: 'audio/webm'} : {};
+    mediaRecorder = new MediaRecorder(destNode.stream, options);
+    
+    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = saveAudioFile;
+
+    mediaRecorder.start();
+    isRecording = true;
+    $('btnRecord').textContent = '⏹ 録音停止・保存 (WebM/WAV)';
+    $('btnRecord').classList.add('rec-on');
+  } else {
+    mediaRecorder.stop();
+    isRecording = false;
+    $('btnRecord').textContent = '🔴 音声録音開始 (ダウンロード保存)';
+    $('btnRecord').classList.remove('rec-on');
+  }
+});
+
+function saveAudioFile(){
+  const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vvvf_${Date.now()}.webm`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function updateAudioParams(){
+  const {elecFreq, motorRpm, meshFreq} = computeMotorState();
+  const baseFreq = Math.max(5, Number($('baseFreq').value)||55);
+  const maxSpeed = Number($('maxSpeed').value)||120;
+  const stage = findActiveStage();
+
+  let modIndex = clamp(elecFreq/baseFreq, 0, 1.25);
+
+  // Generic linear interpolator across a stage's speed span (from->to)
+  function sweep(st, a, b){
+    const span = Math.max(0.001, st.to - st.from);
+    const t = clamp((speed - st.from) / span, 0, 1);
+    return a + (b - a) * t;
+  }
+
+  let mode='async', carrierBase=160, pulseNumber=15;
+  let pmsmOn=false, pmsmFreq=1500;
+  let spreadMode='off', spreadHz=0, spreadRate=4;
+  let thirdOn=false, thirdPct=0;
+  let biasLower=-1, biasUpper=1;
+
+  if(stage){
+    mode = stage.mode;
+    if(mode==='async'){
+      carrierBase = sweep(stage, stage.value, (stage.valueEnd != null) ? stage.valueEnd : stage.value);
+    } else if(mode==='sync' || mode==='she' || mode==='chm' || mode==='ho'){
+      // SHE/CHM/HO はsyncと同じくパルス数 = stage.value を使用
+      pulseNumber = Math.max(1, Math.round(stage.value));
+    }
+    // 'off' (パルス切) は carrierBase/pulseNumber を使わない（基本波から直接生成）
+    pmsmOn = !!(stage.pmsmOn && mode==='async');
+    pmsmFreq = sweep(stage, stage.pmsmFreqStart ?? 1500, stage.pmsmFreqEnd ?? stage.pmsmFreqStart ?? 1500);
+
+    // 拡散は非同期(async)のみ有効。それ以外の方式では強制的に off。
+    spreadMode = (mode==='async') ? (stage.spreadMode || 'off') : 'off';
+    spreadHz = sweep(stage, stage.spreadHzStart ?? 0, stage.spreadHzEnd ?? stage.spreadHzStart ?? 0);
+    spreadRate = clamp(Number(stage.spreadRate)||4, 0.05, 40);
+
+    thirdOn = !!stage.thirdOn;
+    thirdPct = clamp(Number(stage.thirdPct)||0, 0, 50);
+    biasLower = clamp((Number(stage.biasLower ?? -100))/100, -1, 1);
+    biasUpper = clamp((Number(stage.biasUpper ?? 100))/100, -1, 1);
+    if(biasLower > biasUpper) [biasLower,biasUpper] = [biasUpper,biasLower]; // guard against inverted range
+    if(stage.modManualOn){
+      const mPct = sweep(stage, stage.modManualStart ?? 80, stage.modManualEnd ?? stage.modManualStart ?? 80);
+      modIndex = clamp(mPct/100, 0, 1.3);
+    }
+  }
+
+  const humAmt = clamp(Number($('humAmt').value)/100, 0, 1);
+  const gearAmt = clamp(Number($('gearAmt').value)/100, 0, 1);
+  const volume = clamp(Number($('volume').value)/100, 0, 1.2);
+  const hpCutoff = clamp(Number($('hpCutoff').value)||50, 10, 1000);
+  const hpQ = clamp((Number($('hpQ')?.value)||70)/100, 0.3, 4);
+  const lpCutoff = clamp(Number($('lpCutoff').value)||6500, 200, 12000);
+  const lpQ = clamp((Number($('lpQ')?.value)||70)/100, 0.3, 4);
+  const peakFreq = clamp(Number($('peakFreq')?.value)||1200, 80, 10000);
+  const peakGain = clamp(Number($('peakGain')?.value)||0, -100, 100)/100;
+  const peakQ = clamp((Number($('peakQ')?.value)||140)/100, 0.3, 8);
+  const speedFrac = clamp(speed/maxSpeed,0,1);
+  const level3On = $('level3On').checked;
+
+  const modeLabelShort = {async:'非同期', sync:'同期', off:'パルス切', she:'SHE', chm:'CHM', ho:'HO'};
+  $('stElec').textContent = elecFreq.toFixed(1)+' Hz';
+  $('stRpm').textContent = Math.round(motorRpm)+' rpm';
+  $('stStage').textContent = stage
+    ? (mode==='async' ? `非同期 ${Math.round(carrierBase)}Hz`
+      : mode==='off'  ? 'パルス切'
+      : `${modeLabelShort[mode]} ${pulseNumber}パルス`)
+    : '-';
+  $('stMod').textContent = Math.round(modIndex*100)+'%';
+  $('badgePmsm').classList.toggle('on', pmsmOn);
+  $('badgeSpread').classList.toggle('on', spreadMode !== 'off');
+  $('badgeGear').classList.toggle('on', gearAmt > 0);
+
+  if(workletNode){
+    workletNode.port.postMessage({
+      elecFreq, mode, carrierBase, pulseNumber, modIndex,
+      pmsmOn, pmsmFreq,
+      spreadMode, spreadHz, spreadRate,
+      thirdOn, thirdPct,
+      biasLower, biasUpper,
+      level3On,
+      meshFreq, gearAmt, humAmt,
+      humHarmonics: humHarmonics.map(h=>({n:h.n, g:h.g})),
+      speedFrac,
+      lpCutoff, lpQ, hpCutoff, hpQ,
+      peakFreq, peakGain, peakQ,
+      // 直流モーター
+      dcOn: $('dcMotorOn').checked,
+      dcType: $('dcControlType').value,
+      dcResNotch: Number($('dcResNotch')?.value)||5,
+      dcContactorAmt: clamp(Number($('dcContactorAmt')?.value||0)/100, 0, 1),
+      dcArmChopHz0: clamp(Number($('dcArmChopHz0')?.value||100), 20, 2000),
+      dcArmChopHz1: clamp(Number($('dcArmChopHz1')?.value||600), 50, 5000),
+      dcArmChopAmt: clamp(Number($('dcArmChopAmt')?.value||0)/100, 0, 1),
+      dcRotNoise: clamp(Number($('dcRotNoise')?.value||0)/100, 0, 1),
+      volume
+    });
+  }
+}
+
+// オシロスコープ
+function drawScope(){
+  const canvas = $('scope');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = canvas.clientWidth*devicePixelRatio; canvas.height = canvas.clientHeight*devicePixelRatio; }
+  resize();
+  window.addEventListener('resize', resize);
+  const buf = new Float32Array(analyser.fftSize);
+  function loop(){
+    requestAnimationFrame(loop);
+    if(!analyser) return;
+    analyser.getFloatTimeDomainData(buf);
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = '#4fd1c5';
+    ctx.lineWidth = Math.max(1, devicePixelRatio);
+    ctx.beginPath();
+    for(let i=0;i<buf.length;i++){
+      const x = (i/buf.length)*w;
+      const y = h/2 - buf[i]*h*0.45;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  loop();
+}
+
+renderStages();
+</script>
+</body>
+</html>
