@@ -268,6 +268,7 @@
   <nav class="tabs" id="mainTabs">
     <button class="on" data-pane="sound">音色</button>
     <button data-pane="detail">詳細設定</button>
+    <button data-pane="dc">直流モーター</button>
     <button data-pane="pulse">パルスパターン</button>
     <button data-pane="export">書き出し</button>
   </nav>
@@ -320,6 +321,7 @@
   <div class="card" style="padding-top:6px;padding-bottom:6px;">
     <details class="fold" open><summary>モーター・歯車・磁気音</summary><div class="fold-body">
 <div class="row"><label for="poles">モーターの極数</label><select id="poles"><option value="4">4極</option><option value="6" selected>6極</option><option value="8">8極</option></select></div>
+<div class="row"><label for="carrierMul">キャリア周波数の倍率</label><input type="number" id="carrierMul" value="2" min="0.5" max="4" step="0.1" style="width:70px;"><span class="note">パルスパターンに書いた非同期キャリア（と拡散幅）をこの倍率で鳴らします。800Hzと書いて400Hzに聞こえる場合は上げてください</span></div>
 <div class="row"><label for="level3On">3レベルVVVF</label><label class="toggle"><input type="checkbox" id="level3On"><div class="toggle-track"><div class="toggle-thumb"></div></div></label><span class="note">NPC方式。電流リップルが小さく静か</span></div>
 <div class="row"><label for="teethA">歯数比（小 : 大）</label><input type="number" id="teethA" value="14" style="width:60px;"> : <input type="number" id="teethB" value="85" style="width:60px;"></div>
 <div class="row"><label for="wheelDia">車輪径 (mm)</label><input type="number" id="wheelDia" value="860" style="width:80px;"></div>
@@ -381,25 +383,53 @@
 <div class="row" id="customIrRow" style="display:none;"><label for="irFile">IR WAVファイル</label><input type="file" id="irFile" accept=".wav"></div>
 <div class="hint">残響の量は「基本のつまみ」で、場所ごとの自動設定は「音色」タブの「聞こえる場所」で選べます。プリセットは初期反射と、高域ほど早く消える減衰を持たせた近似IRです。実機で録ったIRは「カスタム」で読み込めます。</div>
 </div></details>
-    <details class="fold"><summary>直流モーター（旧型車）</summary><div class="fold-body">
-<div class="checkline"><label class="toggle"><input type="checkbox" id="dcMotorOn"><div class="toggle-track"><div class="toggle-thumb"></div></div></label><label for="dcMotorOn">直流モードを有効にする（VVVFパターンを使わずDCモーター音を合成）</label></div>
-<div id="dcMotorPanel" style="display:none;margin-top:10px;">
-  <div class="row"><label for="dcControlType">制御方式</label><select id="dcControlType"><option value="resistance">抵抗制御（旧型通勤電車）</option><option value="chopperArm">電機子チョッパ制御</option></select></div>
-  <div id="dcResistancePanel">
-    <div class="row"><label for="dcResNotch">ノッチ数</label><select id="dcResNotch"><option value="4">4ノッチ（旧型）</option><option value="5" selected>5ノッチ（通勤型）</option><option value="7">7ノッチ（高性能型）</option></select></div>
-    <div class="row"><label for="dcContactorAmt">接触器の音量</label><input type="range" id="dcContactorAmt" min="0" max="100" value="55"><span id="dcContactorAmtVal" class="mono-val">55%</span></div>
-  </div>
-  <div id="dcArmChopperPanel" style="display:none;">
-    <div class="row"><label for="dcArmChopHz0">チョッパ周波数 低速 (Hz)</label><input type="number" id="dcArmChopHz0" value="100" style="width:80px;"></div>
-    <div class="row"><label for="dcArmChopHz1">チョッパ周波数 高速 (Hz)</label><input type="number" id="dcArmChopHz1" value="600" style="width:80px;"></div>
-    <div class="row"><label for="dcArmChopAmt">チョッパ音量</label><input type="range" id="dcArmChopAmt" min="0" max="100" value="65"><span id="dcArmChopAmtVal" class="mono-val">65%</span></div>
-  </div>
-  <div class="row"><label for="dcRotNoise">モーター回転ノイズ</label><input type="range" id="dcRotNoise" min="0" max="100" value="40"><span id="dcRotNoiseVal" class="mono-val">40%</span></div>
-</div>
-</div></details>
   </div>
 </div>
   
+<div class="pane" id="pane-dc">
+  <div class="card">
+    <h2>直流モーター <span class="tag">旧型・チョッパ制御車の走行音</span></h2>
+    <p class="lead">オンにすると、VVVFのパルスパターンの代わりに、直流モーター車の音（電機子・整流子・歯車・接触器・チョッパ）を合成します。</p>
+    <div class="checkline"><label class="toggle"><input type="checkbox" id="dcMotorOn"><div class="toggle-track"><div class="toggle-thumb"></div></div></label><label for="dcMotorOn">直流モードを有効にする</label></div>
+    <div id="dcMotorPanel" style="display:none;margin-top:12px;">
+      <div class="auto-row"><span class="auto-label">AUTO</span>
+        <button class="small" data-dcp="hang">旧型・抵抗制御（吊り掛け）</button><button class="small" data-dcp="cardan">抵抗制御（カルダン）</button><button class="small" data-dcp="addf">界磁添加励磁</button><button class="small" data-dcp="fchop">界磁チョッパ</button><button class="small" data-dcp="achop">電機子チョッパ</button></div>
+      <div class="hint" style="margin-top:-4px;margin-bottom:6px;">AUTOを押すと、制御方式・駆動方式・段数・歯数比などをまとめて設定します。</div>
+
+      <div class="sec-title">車両の方式</div>
+      <div class="row"><label for="dcControlType">制御方式</label><select id="dcControlType"><option value="resistance">抵抗制御（直並列＋弱め界磁）</option><option value="addField">界磁添加励磁</option><option value="chopperField">界磁チョッパ（電機子チョッパ＋界磁チョッパ）</option><option value="chopperArm">電機子チョッパ</option></select></div>
+      <div class="row"><label for="dcDrive">駆動方式</label><select id="dcDrive"><option value="hanging">吊り掛け駆動（低くうねる歯車音）</option><option value="cardan">カルダン駆動（細く高い歯車音）</option></select><span class="note">歯数比・車輪径は「詳細設定」→「モーター・歯車・磁気音」</span></div>
+
+      <div id="dcResistancePanel">
+        <div class="sec-title">進段（接触器）</div>
+        <div class="row"><label for="dcResS">直列の段数</label><input type="number" id="dcResS" value="10" min="0" max="24" step="1" style="width:76px;"><span class="note">抵抗を1段ずつ切り離す段</span></div>
+        <div class="row"><label for="dcResP">並列の段数</label><input type="number" id="dcResP" value="6" min="0" max="24" step="1" style="width:76px;"><span class="note">直並列の切替後の段</span></div>
+        <div class="row"><label for="dcResF">弱め界磁の段数</label><input type="number" id="dcResF" value="3" min="0" max="12" step="1" style="width:76px;"><span class="note">高速域で界磁を弱める段</span></div>
+        <div class="row"><label for="dcTrans">直並列の切替（渡り）で一瞬トルク抜け</label><label class="toggle"><input type="checkbox" id="dcTrans" checked><div class="toggle-track"><div class="toggle-thumb"></div></div></label></div>
+        <div class="row"><label for="dcContactorAmt">接触器の音量</label><input type="range" id="dcContactorAmt" min="0" max="100" value="55"><span id="dcContactorAmtVal" class="mono-val">55%</span></div>
+        <div class="row"><label for="dcSurge">進段ショック（段の切替で音が膨らむ量）</label><input type="range" id="dcSurge" min="0" max="100" value="50"><span id="dcSurgeVal" class="mono-val">50%</span></div>
+      </div>
+      <div id="dcArmChopperPanel" style="display:none;">
+        <div class="sec-title">チョッパ</div>
+        <div class="row"><label for="dcArmChopHz0">チョッパ周波数 低速 (Hz)</label><input type="number" id="dcArmChopHz0" value="100" min="20" max="2000" step="10" style="width:76px;"></div>
+        <div class="row"><label for="dcArmChopHz1">チョッパ周波数 高速 (Hz)</label><input type="number" id="dcArmChopHz1" value="600" min="50" max="5000" step="10" style="width:76px;"></div>
+        <div class="row"><label for="dcChopSteps">周波数の段数</label><input type="number" id="dcChopSteps" value="0" min="0" max="32" step="1" style="width:76px;"><span class="note">0＝連続して変化 / 2以上＝その段数で階段状に切り替わる</span></div>
+        <div class="row"><label for="dcChopHarm">倍音の多さ</label><input type="number" id="dcChopHarm" value="6" min="1" max="12" step="1" style="width:76px;"><span class="note">大きいほどギラついた音</span></div>
+        <div class="row"><label for="dcArmChopAmt">チョッパ音量</label><input type="range" id="dcArmChopAmt" min="0" max="100" value="65"><span id="dcArmChopAmtVal" class="mono-val">65%</span></div>
+        <div id="dcFieldRow"><div class="row"><label for="dcFieldHz">界磁チョッパ周波数 (Hz)</label><input type="number" id="dcFieldHz" value="350" min="20" max="2000" step="10" style="width:76px;"><span class="note">高速域で加わる別周期の音</span></div></div>
+      </div>
+
+      <div class="sec-title">電動機・歯車・ノイズ</div>
+      <div class="row"><label for="dcMotorAmt">電機子・整流子の音量</label><input type="range" id="dcMotorAmt" min="0" max="300" value="100"><span id="dcMotorAmtVal" class="mono-val">100%</span></div>
+      <div class="row"><label for="dcSlots">電機子スロット数</label><input type="number" id="dcSlots" value="24" min="4" max="96" step="1" style="width:76px;"><span class="note">スロット×回転数の高い線が立つ</span></div>
+      <div class="row"><label for="dcPoles">主極数</label><input type="number" id="dcPoles" value="4" min="2" max="16" step="2" style="width:76px;"></div>
+      <div class="row"><label for="dcGearAmt">歯車の音量</label><input type="range" id="dcGearAmt" min="0" max="300" value="100"><span id="dcGearAmtVal" class="mono-val">100%</span></div>
+      <div class="row"><label for="dcRotNoise">ブラシ・風切りノイズ</label><input type="range" id="dcRotNoise" min="0" max="100" value="40"><span id="dcRotNoiseVal" class="mono-val">40%</span></div>
+      <div class="row"><label for="dcBrakeFan">回生・発電ブレーキ時のファン音</label><input type="range" id="dcBrakeFan" min="0" max="100" value="40"><span id="dcBrakeFanVal" class="mono-val">40%</span></div>
+      <div class="hint">抵抗制御では、速度が上がって抵抗を切り離すたびに接触器が「カタン」と鳴り、電流の変化に合わせて唸りが膨らんで減る動きをします。直列から並列への切替では、一瞬音が途切れて大きな音が鳴ります。チョッパ制御は、通流率が上がって全通流になると音が止みます。</div>
+    </div>
+  </div>
+</div>
 <div class="pane" id="pane-pulse">
   <div class="card">
     <h2>パルスパターン <span class="tag">速度ごとのスイッチング設定</span></h2>
@@ -2612,7 +2642,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
       runAmt: pct, jointAmt: pct, aeroAmt: pct, rumbleAmt: pct, fanAmt: pct, airAmt: pct, curveAmt: pct, diffuseAmt: pct, tiltAmt: pct,
       carrierAmt: pct, sidebandAmt: pct, qdAmt: pct, coastHum: pct, bassBoost: pct, drvAmt: pct, structLP: v => v + 'Hz', humAmt: pct, gearAmt: pct,
       bodyAmt: pct, bodyQ: v => '×' + (v / 100).toFixed(2), bodyShift: v => (v > 0 ? '+' : '') + v + '%',
-      volume: pct, convolverWet: pct, dcContactorAmt: pct, dcArmChopAmt: pct, dcRotNoise: pct
+      volume: pct, convolverWet: pct, dcContactorAmt: pct, dcArmChopAmt: pct, dcRotNoise: pct, dcSurge: pct, dcMotorAmt: pct, dcGearAmt: pct, dcBrakeFan: pct
     };
     function syncLabels() {
       for (const id in LABELS) { const el = $(id), vs = $(id + 'Val'); if (el && vs) vs.textContent = LABELS[id](Number(el.value)); }
@@ -2721,8 +2751,9 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
       const on = $('dcMotorOn').checked;
       const type = $('dcControlType').value;
       $('dcMotorPanel').style.display = on ? '' : 'none';
-      $('dcResistancePanel').style.display = (on && type === 'resistance') ? '' : 'none';
-      $('dcArmChopperPanel').style.display = (on && type === 'chopperArm') ? '' : 'none';
+            $('dcArmChopperPanel').style.display = (on && (type === 'chopperArm' || type === 'chopperField')) ? '' : 'none';
+      $('dcFieldRow').style.display = (on && type === 'chopperField') ? '' : 'none';
+      $('dcResistancePanel').style.display = (on && (type === 'resistance' || type === 'addField')) ? '' : 'none';
     }
     $('dcMotorOn').addEventListener('change', updateDcPanelVisibility);
     $('dcControlType').addEventListener('change', updateDcPanelVisibility);
@@ -3082,6 +3113,8 @@ function softClip(x){
   return x < 0 ? -y : y;
 }
 const DRV_GAIN = 0.5;
+const DC_GAIN = 3.2;
+const DC_GW_HANG = [1.0, 0.65, 0.4, 0.22], DC_GW_CARDAN = [0.6, 0.32, 0.15, 0.07];
 const CAR_PRES_F = 450, CAR_PRES_MAX = 1;
 const CAR_TONE = 1.2;
 const CT_W = [0, 1.0, 0, 0.28];   // 基音と2倍のみ（0.5倍などを足すと、800Hzの裏で400Hzが鳴って聞こえる）       // 駆動音の基準ゲイン
@@ -3103,6 +3136,8 @@ class VVVFProcessor extends AudioWorkletProcessor {
     this.spreadNoise=0; this.rndT=0; this.microNoise=0; this.hopTimer=0; this.hopTarget=0; this.hopCurrent=0; this.toggleSm=0;
     this.iA=0; this.iB=0; this.iC=0; this.lpS=new Float64Array(12);
     this.noiseLp=0; this.windLp=0; this.pink1=0; this.pink2=0;
+    this.dcR=0; this.dcGearPh=0; this.dcWhPh=0; this.dcStage=0; this.dcTrans=0; this.dcTrSm=1; this.dcSurge=0; this.dcChPh=0; this.dcFldPh=0; this.dcFc=0;
+    this.dcVA=new Float32Array(12); this.dcVAge=new Float32Array(12); this.dcVF=new Float32Array(12); this.dcVTau=new Float32Array(12); this.dcBrush=new SVF(); this.dcBrake=new SVF();
     this.dcPhase=0; this.dcChopPhase=0; this.dcContactorTimer=0; this.dcNoiseL1=0; this.dcNoiseL2=0;
     this.jointDist=0; this.sqEnv=0; this.sqFreqN=0; this.tiltLp=0; this.dcX=0; this.dcY=0; this.duckGain=1;
     this.sigKey='';
@@ -3129,7 +3164,7 @@ class VVVFProcessor extends AudioWorkletProcessor {
       humHarmonics:[], bodyF:[160,310,620,1150,2100,3600], bodyG:[0.6,0.8,0.9,0.8,0.6,0.35], bodyQ:[3,3.5,4,4,4,4],
       bodyAmt:0.6, bodyQMul:1, bodyShift:0, structLP:1500,
       lpCutoff:7500, lpQ:0.7, hpCutoff:50, hpQ:0.7, peakFreq:1200, peakGain:0, peakQ:1.4,
-      dcOn:false, dcType:'resistance', dcResNotch:5, dcContactorAmt:0,
+      dcOn:false, dcType:'resistance', dcDrive:'hanging', dir:1, dcResS:10, dcResP:6, dcResF:3, dcTrans:true, dcSurge:0.5, dcMotorAmt:1, dcGearAmt:1, dcSlots:24, dcPoles:4, dcChopSteps:0, dcChopHarm:6, dcFieldHz:350, dcBrakeFan:0.4, dcContactorAmt:0,
       dcArmChopHz0:100, dcArmChopHz1:600, dcArmChopAmt:0, dcRotNoise:0,
       volume:0.65,
       speedKmh:0, runAmt:0.5, jointAmt:0.4, aeroAmt:0.4, rumbleAmt:0.5, fanAmt:0.35, airAmt:0.35, curveAmt:0, diffuse:0.4, tilt:0.4
@@ -3141,7 +3176,7 @@ class VVVFProcessor extends AudioWorkletProcessor {
       load:[0,1], airBrake:[0,1], speedFrac:[0,1],
       bodyAmt:[0,1], bodyQMul:[0.3,3], bodyShift:[-0.5,0.5], structLP:[300,16000],
       lpCutoff:[200,16000], lpQ:[0.3,4], hpCutoff:[10,1000], hpQ:[0.3,4], peakFreq:[80,10000], peakGain:[-1,1], peakQ:[0.3,8],
-      dcResNotch:[1,7], dcContactorAmt:[0,1], dcArmChopHz0:[20,2000], dcArmChopHz1:[50,5000], dcArmChopAmt:[0,1], dcRotNoise:[0,1],
+      dir:[-1,1], dcResS:[0,24], dcResP:[0,24], dcResF:[0,12], dcSurge:[0,1], dcMotorAmt:[0,3], dcGearAmt:[0,3], dcSlots:[4,96], dcPoles:[2,16], dcChopSteps:[0,32], dcChopHarm:[1,12], dcFieldHz:[20,2000], dcBrakeFan:[0,1], dcContactorAmt:[0,1], dcArmChopHz0:[20,2000], dcArmChopHz1:[50,5000], dcArmChopAmt:[0,1], dcRotNoise:[0,1],
       volume:[0,1.2],
       speedKmh:[0,500], runAmt:[0,1], jointAmt:[0,1], aeroAmt:[0,1], rumbleAmt:[0,1], fanAmt:[0,1], airAmt:[0,1], curveAmt:[0,1], diffuse:[0,1], tilt:[0,1]
     };
@@ -3176,11 +3211,15 @@ class VVVFProcessor extends AudioWorkletProcessor {
     };
   }
 
+  dcAddVoice(amp, f, tau, delay){
+    for(let v=0; v<12; v++){ if(this.dcVA[v] <= 0){ this.dcVA[v]=amp; this.dcVF[v]=f; this.dcVTau[v]=tau; this.dcVAge[v]=-delay; return; } }
+  }
+
   sanitizeState(){
     const fields = ['phaseA','pmsmPhase','triPhase','gearPhase','wheelPhase','lfoPhase','fanPhase','thumpPhase','phaseUE','phaseUM','sg',
       'curMod','curVol','gate','curLoad','airEnv','spreadNoise','microNoise','hopTimer','hopTarget','hopCurrent','toggleSm',
       'iA','iB','iC','noiseLp','windLp','pink1','pink2','jointDist','jointEx','sqEnv','sqFreqN','tiltLp','dcX','dcY',
-      'dcPhase','dcChopPhase','dcContactorTimer','dcNoiseL1','dcNoiseL2','bassL1','bassL2'];
+      'dcR','dcGearPh','dcWhPh','dcTrSm','dcSurge','dcChPh','dcFldPh','dcFc','dcTrans','dcPhase','dcChopPhase','dcContactorTimer','dcNoiseL1','dcNoiseL2','bassL1','bassL2'];
     for(const f of fields){ if(!isFinite(this[f])) this[f] = 0; }
     for(let q=0;q<12;q++){ if(!isFinite(this.lpS[q])) this.lpS[q]=0; }
     if(!isFinite(this.stageDuck)) this.stageDuck = 1;
@@ -3465,36 +3504,113 @@ class VVVFProcessor extends AudioWorkletProcessor {
       let structIn = carrierSig + hum + gear + den;
       let dcSig = 0;
       if(p.dcOn && p.speedFrac > 0.002){
-        // ===== 直流モーター =====
-        const dcMotorHz = Math.max(5, elecF*2);
-        this.dcPhase += dcMotorHz/sr; if(this.dcPhase>=1) this.dcPhase-=1;
-        let dcHum = 0;
-        if(p.humHarmonics && p.humHarmonics.length){
-          for(let h=0;h<p.humHarmonics.length;h++){ const hh=p.humHarmonics[h]; if(hh.n>0 && isFinite(hh.g)) dcHum += Math.sin(TWO_PI*hh.n*this.dcPhase)*hh.g; }
-        } else dcHum = (this.dcPhase*2-1)*0.7 + Math.sin(TWO_PI*this.dcPhase)*0.25;
-        dcHum *= p.humAmt*Math.pow(Math.max(0.05,p.speedFrac),0.5)*0.7;
-        if(!isFinite(dcHum)) dcHum = 0;
-        let dcChopSig = 0;
-        if(p.dcType === 'resistance'){
-          const notchFrac = Math.min(1, p.speedFrac*p.dcResNotch);
-          this.dcContactorTimer += 1/sr;
-          const clickInterval = 0.5 + 1.2*p.speedFrac;
-          let click = 0;
-          if(this.dcContactorTimer > clickInterval){ this.dcContactorTimer = 0; click = (Math.random()*2-1)*p.dcContactorAmt*0.8; }
-          this.dcNoiseL1 += (click - this.dcNoiseL1)*0.18;
-          dcChopSig = dcHum*(0.5+0.5*notchFrac) + this.dcNoiseL1;
-        } else {
-          const armHz = Math.max(10, p.dcArmChopHz0 + (p.dcArmChopHz1-p.dcArmChopHz0)*p.speedFrac);
-          this.dcChopPhase += armHz/sr; if(this.dcChopPhase>=1) this.dcChopPhase-=1;
-          const saw = this.dcChopPhase*2-1;
-          this.dcNoiseL1 += (saw - this.dcNoiseL1)*0.3;
-          dcChopSig = (saw - this.dcNoiseL1)*p.dcArmChopAmt*0.75 + dcHum*0.6;
+        // ===== 直流モーター（電機子・整流子・歯車・制御機器を個別に合成）=====
+        const sp = p.speedFrac, fr = sm.motorF, type = p.dcType;
+        const powering = p.invOn;                       // 力行または回生（電流が流れている）
+        const gt = this.gate;                           // 0〜1に滑らかに上下する通電度
+        const cur = 0.25 + 0.75*this.curLoad;           // 電流の大きさ
+        this.dcR += fr/sr; if(this.dcR >= 1) this.dcR -= 1;
+        this.dcSurge -= this.dcSurge*(4.5/sr);
+        if(this.dcTrans > 0) this.dcTrans -= 1/sr;
+        this.dcTrSm += ((this.dcTrans > 0 ? 0.1 : 1) - this.dcTrSm)*0.002;
+
+        // --- 抵抗制御・直並列/弱め界磁の進段（段が変わるたびに接触器が鳴る）---
+        let stageEnv = 1;
+        if(type === 'resistance' || type === 'addField'){
+          const Ns = p.dcResS, Np = p.dcResP, Nf = p.dcResF, N = Math.max(1, Ns+Np+Nf);
+          const x = Math.pow(sp, 0.8)*N, idx = Math.min(N-1, Math.floor(x)), prog = x - Math.floor(x);
+          if(idx !== this.dcStage){
+            if(powering && gt > 0.5 && p.dcContactorAmt > 0.001){
+              const cross = ((this.dcStage < Ns) !== (idx < Ns)) && Ns > 0 && Np > 0;
+              const amp = p.dcContactorAmt*(cross ? 1.0 : 0.5);
+              this.dcAddVoice(amp, cross ? 120 + Math.random()*90 : 240 + Math.random()*520, cross ? 0.06 : 0.02, 0);
+              this.dcAddVoice(amp*0.6, 300 + Math.random()*600, 0.02, 0.03 + Math.random()*0.05);
+              if(cross && p.dcTrans) this.dcTrans = 0.28;
+              this.dcSurge = Math.max(this.dcSurge, (cross ? 1 : 0.55)*p.dcSurge);
+            }
+            this.dcStage = idx;
+          }
+          if(type === 'resistance') stageEnv = 0.78 + 0.22*(1 - prog);      // 段の中で電流がのこぎり状に変化
         }
-        if(!isFinite(dcChopSig)) dcChopSig = 0;
+
+        // --- 電機子（回転子）の線スペクトル: 回転・主極・スロット（整流子片）---
+        const R = this.dcR, slotHz = p.dcSlots*fr, pr = 1/(1+(slotHz/2600)*(slotHz/2600)), pr2 = 1/(1+(2*slotHz/2600)*(2*slotHz/2600));
+        let mh = 0.55*Math.sin(TWO_PI*R) + 0.30*Math.sin(2*TWO_PI*R) + 0.25*Math.sin(TWO_PI*p.dcPoles*R) + 0.16*Math.sin(TWO_PI*2*p.dcPoles*R)
+               + 0.42*pr*Math.sin(TWO_PI*p.dcSlots*R) + 0.18*pr2*Math.sin(TWO_PI*2*p.dcSlots*R);
+        const onK = 0.3 + 0.7*gt;
+        mh *= p.dcMotorAmt*0.5*cur*onK*stageEnv*(1 + 0.5*this.dcSurge)*this.dcTrSm*Math.pow(Math.max(0.05, sp), 0.45);
+
+        // --- 歯車（吊り掛け：低くうねる唸り / カルダン：高く細い音）---
+        this.dcGearPh += sm.meshF/sr; if(this.dcGearPh >= 1) this.dcGearPh -= 1;
+        this.dcWhPh += (fr/Math.max(0.2, p.gearRatio))/sr; if(this.dcWhPh >= 1) this.dcWhPh -= 1;
+        const hang = (p.dcDrive === 'hanging');
+        const gw = hang ? DC_GW_HANG : DC_GW_CARDAN;
+        let dg = 0;
+        for(let k=0;k<4;k++){
+          const fk = (k+1)*sm.meshF;
+          if(fk < sr*0.45){ const r1 = fk/(hang ? 1400 : 3200); dg += gw[k]*Math.sin(TWO_PI*(k+1)*this.dcGearPh)/(1+r1*r1); }
+        }
+        dg *= (1 + (hang ? 0.3 : 0.12)*Math.sin(TWO_PI*this.dcWhPh))*p.dcGearAmt*0.34*(0.45 + 0.55*cur)*Math.pow(sp, 0.7);
+
+        // --- ブラシ・整流子ノイズ（広帯域のサー音）---
         const white = Math.random()*2-1;
-        this.dcNoiseL2 += (white - this.dcNoiseL2)*0.08;
-        dcSig = dcChopSig + this.dcNoiseL2*p.dcRotNoise*Math.sqrt(p.speedFrac);
-        structIn = dcSig + gear;
+        const brush = this.dcBrush.bandpass(white, 1800 + 2200*sp, 1.1, sr)*0.5*p.dcRotNoise*Math.pow(sp, 1.1)*(0.4 + 0.6*cur);
+
+        // --- 接触器・ブレーキ継電器の音（打撃＋減衰共鳴）---
+        let clk = 0;
+        for(let v=0; v<12; v++){
+          if(this.dcVA[v] <= 0) continue;
+          const a = this.dcVAge[v];
+          if(a >= 0){
+            const env = Math.exp(-a/this.dcVTau[v]);
+            clk += this.dcVA[v]*env*(0.55*(Math.random()*2-1) + 0.9*Math.sin(TWO_PI*this.dcVF[v]*a));
+            if(env < 0.004) this.dcVA[v] = 0;
+          }
+          this.dcVAge[v] += 1/sr;
+        }
+        clk *= 0.9;
+
+        // --- チョッパ（電機子チョッパ／界磁チョッパ）---
+        let chop = 0;
+        if(type === 'chopperArm' || type === 'chopperField'){
+          let fcT;
+          if(p.dcChopSteps >= 2){ const S = Math.round(p.dcChopSteps), si = Math.min(S-1, Math.floor(sp*S)); fcT = p.dcArmChopHz0 + (p.dcArmChopHz1 - p.dcArmChopHz0)*si/(S-1); }
+          else fcT = p.dcArmChopHz0 + (p.dcArmChopHz1 - p.dcArmChopHz0)*Math.pow(sp, 0.9);
+          if(this.dcFc <= 0) this.dcFc = fcT;
+          this.dcFc += (fcT - this.dcFc)*0.0012;
+          this.dcChPh += this.dcFc/sr; if(this.dcChPh >= 1) this.dcChPh -= 1;
+          const D = Math.max(0.08, Math.min(1, 0.1 + sp*1.15));       // 速度とともに通流率が上がり、全通流（D=1）では鳴り止む
+          const dEnv = 0.12 + Math.sin(Math.PI*Math.min(1, D));
+          const H = Math.max(1, Math.min(12, Math.round(p.dcChopHarm)));
+          let cs = 0;
+          for(let k=1;k<=H;k++){
+            if(k*this.dcFc > sr*0.42) break;
+            cs += Math.sin(TWO_PI*k*this.dcChPh + 0.7*k)*Math.abs(Math.sin(Math.PI*k*Math.min(0.98, D)))/Math.pow(k, 1.05);
+          }
+          chop = cs*dEnv*0.5*p.dcArmChopAmt*cur*gt;
+          if(type === 'chopperField'){
+            // 界磁チョッパ：高速域（弱め界磁）で別の周期のチョッパが加わる
+            const fg = Math.max(0, Math.min(1, (sp - 0.5)/0.35));
+            this.dcFldPh += p.dcFieldHz*(1 + 0.04*sp)/sr; if(this.dcFldPh >= 1) this.dcFldPh -= 1;
+            const fph = this.dcFldPh;
+            chop += (Math.sin(TWO_PI*fph) + 0.45*Math.sin(TWO_PI*2*fph + 0.5) + 0.2*Math.sin(TWO_PI*3*fph + 1.1))*fg*0.35*p.dcArmChopAmt*cur*gt;
+          }
+        } else if(type === 'addField'){
+          // 界磁添加励磁：低い周期のうなり（サイリスタ位相制御の脈動）が速度とともに高くなる
+          this.dcFldPh += (90 + 120*sp)/sr; if(this.dcFldPh >= 1) this.dcFldPh -= 1;
+          chop = (Math.sin(TWO_PI*this.dcFldPh) + 0.5*Math.sin(TWO_PI*2*this.dcFldPh + 0.4) + 0.25*Math.sin(TWO_PI*3*this.dcFldPh))*0.18*p.dcArmChopAmt*cur*gt*stageEnv;
+        }
+
+        // --- 回生・発電ブレーキ時の冷却ファン／抵抗器の風切り音 ---
+        let bf = 0;
+        if(p.dir < 0 && powering && p.dcBrakeFan > 0.001){
+          this.dcNoiseL2 += (white - this.dcNoiseL2)*0.05;
+          bf = this.dcNoiseL2*p.dcBrakeFan*Math.pow(sp, 0.8)*this.curLoad*1.6 + this.dcBrake.bandpass(white, 500 + 700*sp, 0.9, sr)*0.4*p.dcBrakeFan*sp*this.curLoad;
+        }
+
+        dcSig = (mh + dg + brush + chop + bf + 2.2*clk)*DC_GAIN;
+        if(!isFinite(dcSig)) dcSig = 0;
+        structIn = dcSig + den;
       }
 
       let structOut = structIn;
@@ -3512,7 +3628,7 @@ class VVVFProcessor extends AudioWorkletProcessor {
       // ---- 駆動音（歯車かみ合い系）：かみ合い周波数 u の整数倍・分数倍の細い線の束。車体の高域減衰は通さない ----
       {
         const nL = p.drvLines ? p.drvLines.length : 0;
-        const dt = (p.drvAmt > 0.001 && nL > 0 && p.speedFrac > 0.003) ? 1 : 0;
+        const dt = (p.drvAmt > 0.001 && nL > 0 && p.speedFrac > 0.003 && !p.dcOn) ? 1 : 0;
         this.drvG += (dt - this.drvG)*(1/(sr*0.05));
         if(this.drvG > 1e-4){
           let ds = 0;
@@ -3836,18 +3952,19 @@ registerProcessor('vvvf-processor', VVVFProcessor);
         return a + (b - a) * clamp((spd - st.from) / span, 0, 1);
       }
 
+      const cMul = clamp(numOr($('carrierMul').value, 2), 0.5, 4);
       let mode = 'async', carrierBase = 160, pulseNumber = 15;
       let pmsmOn = false, pmsmFreq = 1500, spreadMode = 'off', spreadHz = 0, spreadRate = 4;
       let thirdOn = false, thirdPct = 0, biasLower = -1, biasUpper = 1, stageGain = 1;
 
       if (stage) {
         mode = stage.mode;
-        if (mode === 'async') carrierBase = sweep(stage, stage.value, (stage.valueEnd != null) ? stage.valueEnd : stage.value);
+        if (mode === 'async') carrierBase = sweep(stage, stage.value, (stage.valueEnd != null) ? stage.valueEnd : stage.value) * cMul;
         else if (mode !== 'off') pulseNumber = Math.max(1, Math.round(stage.value));
         pmsmOn = !!(stage.pmsmOn && mode === 'async');
         pmsmFreq = sweep(stage, stage.pmsmFreqStart ?? 1500, stage.pmsmFreqEnd ?? stage.pmsmFreqStart ?? 1500);
         spreadMode = (mode === 'async') ? (stage.spreadMode || 'off') : 'off';
-        spreadHz = sweep(stage, stage.spreadHzStart ?? 0, stage.spreadHzEnd ?? stage.spreadHzStart ?? 0);
+        spreadHz = sweep(stage, stage.spreadHzStart ?? 0, stage.spreadHzEnd ?? stage.spreadHzStart ?? 0) * cMul;
         spreadRate = clamp(Number(stage.spreadRate) || 30, 0.05, 1000);
         stageGain = Math.pow(10, clamp(Number(stage.gainDb) || 0, -40, 20) / 20);
         thirdOn = !!stage.thirdOn;
@@ -3892,19 +4009,23 @@ registerProcessor('vvvf-processor', VVVFProcessor);
         peakGain: clamp(numOr($('peakGain').value, 0), -100, 100) / 100,
         peakQ: clamp(numOr($('peakQ').value, 140) / 100, 0.3, 8),
         dcOn: $('dcMotorOn').checked, dcType: $('dcControlType').value,
-        dcResNotch: numOr($('dcResNotch').value, 5),
+        dir: c.invDir, dcDrive: $('dcDrive').value,
+        dcResS: clamp(Math.round(numOr($('dcResS').value, 10)), 0, 24), dcResP: clamp(Math.round(numOr($('dcResP').value, 6)), 0, 24), dcResF: clamp(Math.round(numOr($('dcResF').value, 3)), 0, 12),
+        dcTrans: $('dcTrans').checked, dcSurge: g('dcSurge'), dcMotorAmt: clamp(numOr($('dcMotorAmt').value, 100) / 100, 0, 3), dcGearAmt: clamp(numOr($('dcGearAmt').value, 100) / 100, 0, 3),
+        dcSlots: clamp(numOr($('dcSlots').value, 24), 4, 96), dcPoles: clamp(numOr($('dcPoles').value, 4), 2, 16), dcChopSteps: clamp(Math.round(numOr($('dcChopSteps').value, 0)), 0, 32),
+        dcChopHarm: clamp(numOr($('dcChopHarm').value, 6), 1, 12), dcFieldHz: clamp(numOr($('dcFieldHz').value, 350), 20, 2000), dcBrakeFan: g('dcBrakeFan'),
         dcContactorAmt: g('dcContactorAmt'),
         dcArmChopHz0: clamp(numOr($('dcArmChopHz0').value, 100), 20, 2000),
         dcArmChopHz1: clamp(numOr($('dcArmChopHz1').value, 600), 50, 5000),
         dcArmChopAmt: g('dcArmChopAmt'), dcRotNoise: g('dcRotNoise'),
         volume: clamp(Number($('volume').value) / 100, 0, 1.2)
       };
-      return { msg, ms, stage, mode, carrierBase, pulseNumber, modIndex, elecFreq, pmsmOn, spreadMode, gearAmt };
+      return { msg, ms, stage, mode, carrierBase, carrierSet: carrierBase / cMul, pulseNumber, modIndex, elecFreq, pmsmOn, spreadMode, gearAmt };
     }
 
     function updateAudioParams() {
       const r = buildParams({ speed, invOn, invDir, invLoad, airBrake });
-      const { ms, stage, mode, carrierBase, pulseNumber, modIndex, elecFreq, pmsmOn, spreadMode, gearAmt } = r;
+      const { ms, stage, mode, carrierSet: carrierBase, pulseNumber, modIndex, elecFreq, pmsmOn, spreadMode, gearAmt } = r;
       if (stage && stage.id !== liveStageId) {
         liveStageId = stage.id;
         document.querySelectorAll('.stage-card').forEach(c => c.classList.toggle('live', Number(c.dataset.id) === liveStageId));
@@ -4768,7 +4889,7 @@ registerProcessor('vvvf-processor', VVVFProcessor);
       for (let i = 0; i < states.length; i++) {
         const r = buildParams(stateArg(states[i]));
         send(r.msg);
-        metrics.push({ elec: r.elecFreq, mod: r.modIndex, rpm: r.ms.motorRpm, mode: r.mode, carrier: r.carrierBase, pulse: r.pulseNumber, hasStage: !!r.stage });
+        metrics.push({ elec: r.elecFreq, mod: r.modIndex, rpm: r.ms.motorRpm, mode: r.mode, carrier: r.carrierSet, pulse: r.pulseNumber, hasStage: !!r.stage });
         for (let q = 0; q < XP_BLOCK; q += 128) { pr.process([], [[L, R]]); outL.set(L, i * XP_BLOCK + q); outR.set(R, i * XP_BLOCK + q); }
         if (performance.now() - t0 > 60) { await yieldUI(); t0 = performance.now(); if (onStep) onStep(i / states.length); }
       }
@@ -5178,6 +5299,17 @@ registerProcessor('vvvf-processor', VVVFProcessor);
     document.querySelectorAll('[data-scene]').forEach(b => b.addEventListener('click', () => {
       const sc = SCENES[b.dataset.scene]; setMany(sc.ui); applyRunPreset(sc.run); setMany(EQ_PRESETS[sc.eq]); afterPresetApply();
       document.querySelectorAll('#sceneBar [data-scene]').forEach(x => x.classList.toggle('seg-on', x === b));
+    }));
+
+    const DC_PRESETS = {
+      hang: { name: '旧型・抵抗制御（吊り掛け）', ui: { dcControlType: 'resistance', dcDrive: 'hanging', dcResS: 10, dcResP: 6, dcResF: 0, dcTrans: true, dcContactorAmt: 70, dcSurge: 60, dcMotorAmt: 100, dcSlots: 31, dcPoles: 4, dcGearAmt: 130, dcRotNoise: 40, dcBrakeFan: 30, teethA: 18, teethB: 87 } },
+      cardan: { name: '抵抗制御（カルダン）', ui: { dcControlType: 'resistance', dcDrive: 'cardan', dcResS: 8, dcResP: 5, dcResF: 3, dcTrans: true, dcContactorAmt: 60, dcSurge: 45, dcMotorAmt: 100, dcSlots: 28, dcPoles: 4, dcGearAmt: 90, dcRotNoise: 40, dcBrakeFan: 40, teethA: 14, teethB: 85 } },
+      addf: { name: '界磁添加励磁', ui: { dcControlType: 'addField', dcDrive: 'cardan', dcResS: 1, dcResP: 1, dcResF: 3, dcTrans: true, dcContactorAmt: 40, dcSurge: 30, dcArmChopAmt: 60, dcMotorAmt: 100, dcSlots: 30, dcPoles: 4, dcGearAmt: 90, dcRotNoise: 35, dcBrakeFan: 40, teethA: 15, teethB: 90 } },
+      fchop: { name: '界磁チョッパ', ui: { dcControlType: 'chopperField', dcDrive: 'cardan', dcArmChopHz0: 150, dcArmChopHz1: 520, dcChopSteps: 0, dcChopHarm: 5, dcArmChopAmt: 60, dcFieldHz: 380, dcMotorAmt: 90, dcSlots: 32, dcPoles: 4, dcGearAmt: 90, dcRotNoise: 35, dcBrakeFan: 40, teethA: 16, teethB: 101 } },
+      achop: { name: '電機子チョッパ', ui: { dcControlType: 'chopperArm', dcDrive: 'cardan', dcArmChopHz0: 120, dcArmChopHz1: 620, dcChopSteps: 0, dcChopHarm: 7, dcArmChopAmt: 70, dcMotorAmt: 90, dcSlots: 32, dcPoles: 4, dcGearAmt: 90, dcRotNoise: 35, dcBrakeFan: 40, teethA: 15, teethB: 90 } }
+    };
+    document.querySelectorAll('[data-dcp]').forEach(b => b.addEventListener('click', () => {
+      const d = DC_PRESETS[b.dataset.dcp]; setMany(d.ui); updateDcPanelVisibility(); scheduleAutosave();
     }));
     document.querySelectorAll('[data-harm]').forEach(b => b.addEventListener('click', () => { applyHarm(b.dataset.harm); scheduleAutosave(); }));
     document.querySelectorAll('[data-drv]').forEach(b => b.addEventListener('click', () => { setMany(DRV_PRESETS[b.dataset.drv]); scheduleAutosave(); }));
