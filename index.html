@@ -294,10 +294,10 @@
   <div class="card">
     <h2>基本のつまみ</h2>
     <div class="row"><label for="volume">全体の音量</label><input type="range" id="volume" min="0" max="100" value="65"><span id="volumeVal" class="mono-val">65%</span></div>
-    <div class="row"><label for="humAmt">モーターの唸り</label><input type="range" id="humAmt" min="0" max="100" value="30"><span id="humAmtVal" class="mono-val">30%</span></div>
+    <div class="row"><label for="humAmt">モーターの唸り</label><input type="range" id="humAmt" min="0" max="100" value="60"><span id="humAmtVal" class="mono-val">60%</span></div>
     <div class="row"><label for="drvAmt">駆動音（歯車・ウォーン）</label><input type="range" id="drvAmt" min="0" max="300" value="100"><span id="drvAmtVal" class="mono-val">100%</span></div>
-    <div class="row"><label for="carrierAmt">インバータ音（キャリア）</label><input type="range" id="carrierAmt" min="0" max="150" value="60"><span id="carrierAmtVal" class="mono-val">60%</span></div>
-    <div class="row"><label for="runAmt">走行音（シャー）</label><input type="range" id="runAmt" min="0" max="100" value="25"><span id="runAmtVal" class="mono-val">25%</span></div>
+    <div class="row"><label for="carrierAmt">インバータ音（キャリア）</label><input type="range" id="carrierAmt" min="0" max="150" value="80"><span id="carrierAmtVal" class="mono-val">80%</span></div>
+    <div class="row"><label for="runAmt">走行音（シャー）</label><input type="range" id="runAmt" min="0" max="100" value="30"><span id="runAmtVal" class="mono-val">30%</span></div>
     <div class="row"><label for="convolverWet">響き（残響の量）</label><input type="range" id="convolverWet" min="0" max="100" value="0"><span id="convolverWetVal" class="mono-val">0%</span></div>
     <div class="hint">もっと細かく調整したい場合は「詳細設定」タブへ。</div>
   </div>
@@ -325,11 +325,11 @@
 <div class="row"><label for="wheelDia">車輪径 (mm)</label><input type="number" id="wheelDia" value="860" style="width:80px;"></div>
 <div class="row"><label for="baseFreq">基底周波数 (Hz)</label><input type="number" id="baseFreq" value="110" min="5" max="200" style="width:80px;"><span class="note">変調率が100%になる周波数</span></div>
 <div class="row"><label for="maxSpeed">最高速度 (km/h)</label><input type="number" id="maxSpeed" value="120" style="width:80px;"></div>
-<div class="row"><label for="sidebandAmt">うなり（側帯波）</label><input type="range" id="sidebandAmt" min="0" max="120" value="25"><span id="sidebandAmtVal" class="mono-val">25%</span></div>
-<div class="row"><label for="qdAmt">和差音（2乗項）</label><input type="range" id="qdAmt" min="0" max="150" value="35"><span id="qdAmtVal" class="mono-val">35%</span></div>
-<div class="row"><label for="structLP">車体の高域減衰</label><input type="range" id="structLP" min="300" max="12000" value="1800"><span id="structLPVal" class="mono-val">1800Hz</span></div>
-<div class="row"><label for="coastHum">惰行中のモーター唸り</label><input type="range" id="coastHum" min="0" max="300" value="100"><span id="coastHumVal" class="mono-val">100%</span></div>
-<div class="row"><label for="gearAmt">歯車（ギヤ鳴り）</label><input type="range" id="gearAmt" min="0" max="100" value="15"><span id="gearAmtVal" class="mono-val">15%</span></div>
+<div class="row"><label for="sidebandAmt">うなり（側帯波）</label><input type="range" id="sidebandAmt" min="0" max="120" value="35"><span id="sidebandAmtVal" class="mono-val">35%</span></div>
+<div class="row"><label for="qdAmt">和差音（2乗項）</label><input type="range" id="qdAmt" min="0" max="150" value="60"><span id="qdAmtVal" class="mono-val">60%</span></div>
+<div class="row"><label for="structLP">車体の高域減衰</label><input type="range" id="structLP" min="300" max="12000" value="3500"><span id="structLPVal" class="mono-val">3500Hz</span></div>
+<div class="row"><label for="coastHum">惰行中のモーター唸り</label><input type="range" id="coastHum" min="0" max="300" value="130"><span id="coastHumVal" class="mono-val">130%</span></div>
+<div class="row"><label for="gearAmt">歯車（ギヤ鳴り）</label><input type="range" id="gearAmt" min="0" max="100" value="35"><span id="gearAmtVal" class="mono-val">35%</span></div>
 <div class="hint">磁気音は、PWM電圧をモーターのインダクタンスで積分した「電流リップル」から作っています。うなりはキャリアの両脇に立つ側帯波、和差音はリップル同士の積で生まれる成分です。</div>
 </div></details>
     <details class="fold"><summary>倍音バンク（モーターの線スペクトル）</summary><div class="fold-body">
@@ -346,8 +346,8 @@
 </div>
 <div class="row"><label for="drvOn">駆動音</label><label class="toggle"><input type="checkbox" id="drvOn" checked><div class="toggle-track"><div class="toggle-thumb"></div></div></label><span class="note">ON/OFF（音量は「基本のつまみ」）</span></div>
 <div class="row" style="flex-wrap:wrap;"><label for="drvLines">線の構成（かみ合い周波数uの何倍 : 強さ）</label></div>
-<input type="text" id="drvLines" value="0.285:0.4, 0.5:0.05, 1:1, 1.5:0.03, 2:0.4, 4:0.03, 5:0.04, 6:0.04, 7:0.015, 10:0.7" style="width:100%;font-family:var(--mono);font-size:11.5px;">
-<div class="row" style="margin-top:9px;"><label>低域カット / 高域カット (Hz)</label><input type="number" id="drvHp" value="170" min="20" max="1000" style="width:70px;"> / <input type="number" id="drvLp" value="1700" min="300" max="12000" style="width:70px;"></div>
+<input type="text" id="drvLines" value="0.285:0.25, 0.5:0.04, 1:0.6, 1.5:0.03, 2:0.3, 4:0.03, 5:0.04, 6:0.04, 7:0.25, 10:0.8, 14:0.35, 20:0.15" style="width:100%;font-family:var(--mono);font-size:11.5px;">
+<div class="row" style="margin-top:9px;"><label>低域カット / 高域カット (Hz)</label><input type="number" id="drvHp" value="200" min="20" max="1000" style="width:70px;"> / <input type="number" id="drvLp" value="2600" min="300" max="12000" style="width:70px;"></div>
 <div class="row"><label for="syncTrimDb">同期モードの音量補正 (dB)</label><input type="number" id="syncTrimDb" value="-36" min="-60" max="12" step="1" style="width:70px;"><span class="note">同期パルス域のキャリア音の大きさ。下げるほど小さい</span></div>
 <div class="hint">かみ合い周波数 u（＝歯数×モーター回転数。速度に比例）を基準に、細い線が立ちます。1倍が最も強く、10倍の線は低速域で高い唸りとして聞こえます。低域カット・高域カットは「鳴っている周波数」に応じた強さの山で、既定では1kHz前後が最も強く、それより上では急に弱まります。「比:強さ」はカンマ区切りで最大16本まで編集できます。</div>
 </div></details>
@@ -359,14 +359,14 @@
 </div></details>
     <details class="fold"><summary>走行音（転動・継目・空力）</summary><div class="fold-body">
 <div class="presetbar"><button class="small" data-runpreset="cabin">車内（こもり気味）</button><button class="small" data-runpreset="std">標準</button><button class="small" data-runpreset="outdoor">車外（ざらざら）</button></div>
-<div class="hint" style="margin-top:0;">転動音（シャー）は「基本のつまみ」にあります。</div><div class="row"><label for="jointAmt">レール継目</label><input type="range" id="jointAmt" min="0" max="100" value="20"><span id="jointAmtVal" class="mono-val">20%</span></div><div class="row"><label for="aeroAmt">空力音（高速）</label><input type="range" id="aeroAmt" min="0" max="100" value="20"><span id="aeroAmtVal" class="mono-val">20%</span></div><div class="row"><label for="rumbleAmt">車体の低いゴー音</label><input type="range" id="rumbleAmt" min="0" max="100" value="30"><span id="rumbleAmtVal" class="mono-val">30%</span></div><div class="row"><label for="fanAmt">モーター冷却ファン</label><input type="range" id="fanAmt" min="0" max="100" value="15"><span id="fanAmtVal" class="mono-val">15%</span></div><div class="row"><label for="airAmt">ブレーキ摩擦音</label><input type="range" id="airAmt" min="0" max="100" value="30"><span id="airAmtVal" class="mono-val">30%</span></div><div class="row"><label for="curveAmt">曲線きしり</label><input type="range" id="curveAmt" min="0" max="100" value="0"><span id="curveAmtVal" class="mono-val">0%</span></div><div class="row"><label for="diffuseAmt">拡散（ぼかし）</label><input type="range" id="diffuseAmt" min="0" max="100" value="35"><span id="diffuseAmtVal" class="mono-val">35%</span></div><div class="row"><label for="tiltAmt">高音の減衰（車内）</label><input type="range" id="tiltAmt" min="0" max="100" value="40"><span id="tiltAmtVal" class="mono-val">40%</span></div>
+<div class="hint" style="margin-top:0;">転動音（シャー）は「基本のつまみ」にあります。</div><div class="row"><label for="jointAmt">レール継目</label><input type="range" id="jointAmt" min="0" max="100" value="25"><span id="jointAmtVal" class="mono-val">25%</span></div><div class="row"><label for="aeroAmt">空力音（高速）</label><input type="range" id="aeroAmt" min="0" max="100" value="25"><span id="aeroAmtVal" class="mono-val">25%</span></div><div class="row"><label for="rumbleAmt">車体の低いゴー音</label><input type="range" id="rumbleAmt" min="0" max="100" value="35"><span id="rumbleAmtVal" class="mono-val">35%</span></div><div class="row"><label for="fanAmt">モーター冷却ファン</label><input type="range" id="fanAmt" min="0" max="100" value="20"><span id="fanAmtVal" class="mono-val">20%</span></div><div class="row"><label for="airAmt">ブレーキ摩擦音</label><input type="range" id="airAmt" min="0" max="100" value="35"><span id="airAmtVal" class="mono-val">35%</span></div><div class="row"><label for="curveAmt">曲線きしり</label><input type="range" id="curveAmt" min="0" max="100" value="0"><span id="curveAmtVal" class="mono-val">0%</span></div><div class="row"><label for="diffuseAmt">拡散（ぼかし）</label><input type="range" id="diffuseAmt" min="0" max="100" value="40"><span id="diffuseAmtVal" class="mono-val">40%</span></div><div class="row"><label for="tiltAmt">高音の減衰（車内）</label><input type="range" id="tiltAmt" min="0" max="100" value="40"><span id="tiltAmtVal" class="mono-val">40%</span></div>
 <div class="hint">転動音は速度の1.5乗、空力音は3乗で増えます。レール継目は25mごとに台車の軸距で4連打になります。拡散は音の角を丸め、高音の減衰は車内で高域ほど小さく聞こえる性質を再現します。</div>
 </div></details>
     <details class="fold"><summary>イコライザー・フィルター</summary><div class="fold-body">
 <div class="auto-row"><span class="auto-label">AUTO</span>
   <button class="small" data-eq="auto">おまかせ</button><button class="small" data-eq="cabin">車内向け</button><button class="small" data-eq="outdoor">車外向け</button><button class="small" data-eq="bass">低音強め</button><button class="small" data-eq="flat">補正なし</button>
 </div>
-<div class="row"><label for="bassBoost">低音ブースト（260Hz以下）</label><input type="range" id="bassBoost" min="0" max="300" value="80"><span id="bassBoostVal" class="mono-val">80%</span></div>
+<div class="row"><label for="bassBoost">低音ブースト（260Hz以下）</label><input type="range" id="bassBoost" min="0" max="300" value="150"><span id="bassBoostVal" class="mono-val">150%</span></div>
 <h3>ハイパス（低音カット）</h3>
 <div class="row"><label for="hpCutoff">周波数</label><input type="range" id="hpCutoff" min="20" max="300" value="50"><span id="hpCutoffVal" class="mono-val">50Hz</span></div><div class="row"><label for="hpQ">レゾナンス Q</label><input type="range" id="hpQ" min="30" max="400" value="70"><span id="hpQVal" class="mono-val">0.70</span></div>
 <h3>ローパス（高域の上限）</h3>
@@ -2738,7 +2738,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         ui[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
       });
       getSets();
-      return { version: 4, name: ($('jsonName').value || '').trim(), stages: stageSets.A, stagesBrake: stageSets.B, ui, humHarmonics, bodyKey };
+      return { version: 5, name: ($('jsonName').value || '').trim(), stages: stageSets.A, stagesBrake: stageSets.B, ui, humHarmonics, bodyKey };
     }
     function setUiValue(id, v) {
       const el = $(id); if (!el || el.type === 'file') return;
@@ -2751,7 +2751,15 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         const B = (Array.isArray(data.stagesBrake) && data.stagesBrake.length ? data.stagesBrake : data.stages).map(st => newStage(st));
         stageSets.A = A; stageSets.B = B; stages = stageSets[activeTab];
       }
-      if (data.ui) { for (const id in data.ui) setUiValue(id, data.ui[id]); }
+      if (data.ui) {
+        for (const id in data.ui) setUiValue(id, data.ui[id]);
+        // 旧バージョンで保存した設定の移行：駆動音の仕様が変わったため、駆動音の構成は新しい標準に置き換える
+        // （パルスパターン・ノッチ・その他の音色の設定はそのまま残す）
+        if ((data.version || 0) < 5) {
+          setMany(DRV_PRESETS.std); setUiValue('drvAmt', 100); setUiValue('syncTrimDb', Math.min(numOr(data.ui.syncTrimDb, -36), -36));
+          if (data.ui.drvHp !== undefined) { setMany(QUICK.real.ui); setMany(EQ_PRESETS.auto); }   // 旧仕様の試作版で保存されたもの
+        }
+      }
       // 旧形式 (settings)
       if (data.settings) {
         const st = data.settings;
@@ -3073,7 +3081,10 @@ function softClip(x){
   const y = 0.6 + 0.4*Math.tanh((a-0.6)/0.4);
   return x < 0 ? -y : y;
 }
-const DRV_GAIN = 2.0;       // 駆動音の基準ゲイン
+const DRV_GAIN = 0.5;
+const CAR_PRES_F = 450, CAR_PRES_MAX = 1;
+const CAR_TONE = 1.2;
+const CT_W = [0.28, 1.0, 0.11, 0.28];       // 駆動音の基準ゲイン
 const RIPPLE_FC = 60;       // モーター電流積分の折点(Hz)  i ≈ ∫v dt
 const RIPPLE_GAIN = 10;
 const JOINT_F = [90, 210, 470, 1150];
@@ -3085,7 +3096,7 @@ class VVVFProcessor extends AudioWorkletProcessor {
     super();
     const sr = sampleRate;
     this.phaseA=0; this.pmsmPhase=0; this.triPhase=0; this.gearPhase=0; this.wheelPhase=0; this.drvPhs=new Float64Array(16); this.drvG=0; this.fndS=1.15; this.fndC=0; this.lfoPhase=0;
-    this.fanPhase=0; this.thumpPhase=0;
+    this.fanPhase=0; this.thumpPhase=0; this.ctP=new Float64Array(4);
     this.aLP = 1 - Math.exp(-2*Math.PI*12000/(sr*OS)); this.denTog = 1;
     this.phaseUE=0; this.phaseUM=0;   // 巻き戻さない位相（小数次の倍音が周期ごとにプチ音を出さないように）
     this.curMod=0; this.curVol=0; this.gate=0; this.curLoad=0; this.stageDuck=1; this.duckT=1; this.bassL1=0; this.bassL2=0; this.sg=1; this.airEnv=0;
@@ -3399,7 +3410,26 @@ class VVVFProcessor extends AudioWorkletProcessor {
       const loadF = 0.55 + 0.45*this.curLoad;
       const gate = this.gate;
       this.sg += (p.stageGain - this.sg)*0.003;
-      carrierSig *= p.carrierAmt * 2.4 * gate * loadF * this.stageDuck * this.sg;
+      // 耳に届くキャリア音は電流リップル(1/f)よりも高域側が強く聞こえる（実車録音では1〜3kHzのキャリア帯が支配的）ので、周波数に応じて持ち上げる
+      const presence = Math.min(CAR_PRES_MAX, Math.max(1, carrierFreq/CAR_PRES_F));
+      carrierSig *= p.carrierAmt * 2.4 * gate * loadF * this.stageDuck * this.sg * presence;
+
+      // ---- キャリア音そのもの（非同期の「ジー」という帯・同期の周波数が上がる線）----
+      // 3相の線間電圧ではキャリア基本波が打ち消し合うため、電流リップルの計算だけでは実車で一番目立つ基音が出ない。
+      // 実車録音ではキャリア周波数（その0.5倍・1.5倍・2倍も弱く）が支配的なので、ここで基音を足す。
+      // 周波数はスペクトラム拡散の揺らぎを含む carrierFreq なので、拡散モードを使えば帯状に広がる。
+      let ctone = 0;
+      if(!isStepped){
+        const cf = carrierFreq/sr;
+        this.ctP[0] += cf*0.5; this.ctP[1] += cf; this.ctP[2] += cf*1.5; this.ctP[3] += cf*2;
+        for(let q=0;q<4;q++) if(this.ctP[q]>=1) this.ctP[q]-=1;
+        if(gate > 0.001){
+          const raw = CT_W[0]*Math.sin(TWO_PI*this.ctP[0]) + CT_W[1]*Math.sin(TWO_PI*this.ctP[1]) + CT_W[2]*Math.sin(TWO_PI*this.ctP[2]) + CT_W[3]*Math.sin(TWO_PI*this.ctP[3]);
+          const fr = carrierFreq/5000;
+          ctone = raw*p.carrierAmt*CAR_TONE*gate*loadF*this.stageDuck*this.sg/(1+fr*fr);
+        }
+      }
+      carrierSig += ctone;
 
       // ---- モーター基本波の倍音（トルクリップル等）----
       let hum = 0;
@@ -5094,16 +5124,16 @@ registerProcessor('vvvf-processor', VVVFProcessor);
       scheduleAutosave();
     }
     const DRV_PRESETS = {
-      std: { drvLines: '0.285:0.4, 0.5:0.05, 1:1, 1.5:0.03, 2:0.4, 4:0.03, 5:0.04, 6:0.04, 7:0.015, 10:0.7', drvHp: 170, drvLp: 1700 },
-      high: { drvLines: '0.285:0.3, 0.5:0.05, 1:0.8, 1.5:0.03, 2:0.45, 3:0.1, 4:0.05, 5:0.06, 6:0.06, 7:0.03, 10:1.2', drvHp: 170, drvLp: 2600 },
-      low: { drvLines: '0.285:0.7, 0.5:0.1, 1:1, 1.5:0.05, 2:0.35, 4:0.02, 10:0.2', drvHp: 110, drvLp: 1000 },
-      soft: { drvLines: '0.285:0.3, 1:1, 2:0.3, 10:0.3', drvHp: 170, drvLp: 1300 }
+      std: { drvLines: '0.285:0.25, 0.5:0.04, 1:0.6, 1.5:0.03, 2:0.3, 4:0.03, 5:0.04, 6:0.04, 7:0.25, 10:0.8, 14:0.35, 20:0.15', drvHp: 200, drvLp: 2600 },
+      high: { drvLines: '0.285:0.15, 0.5:0.03, 1:0.4, 2:0.25, 5:0.05, 7:0.4, 10:1.1, 14:0.6, 20:0.3', drvHp: 220, drvLp: 3400 },
+      low: { drvLines: '0.285:0.5, 0.5:0.08, 1:0.9, 1.5:0.05, 2:0.35, 4:0.03, 7:0.1, 10:0.3', drvHp: 130, drvLp: 1300 },
+      soft: { drvLines: '0.285:0.2, 1:0.5, 2:0.2, 7:0.15, 10:0.4, 14:0.15', drvHp: 200, drvLp: 1800 }
     };
     const EQ_PRESETS = {
-      auto: { bassBoost: 80, hpCutoff: 50, hpQ: 70, lpCutoff: 7500, lpQ: 70, peakFreq: 1200, peakGain: 0, peakQ: 140 },
-      cabin: { bassBoost: 110, hpCutoff: 60, hpQ: 70, lpCutoff: 4800, lpQ: 70, peakFreq: 250, peakGain: 15, peakQ: 100 },
-      outdoor: { bassBoost: 40, hpCutoff: 90, hpQ: 70, lpCutoff: 11000, lpQ: 70, peakFreq: 3000, peakGain: 15, peakQ: 100 },
-      bass: { bassBoost: 220, hpCutoff: 40, hpQ: 70, lpCutoff: 6000, lpQ: 70, peakFreq: 120, peakGain: 20, peakQ: 100 },
+      auto: { bassBoost: 150, hpCutoff: 50, hpQ: 70, lpCutoff: 7500, lpQ: 70, peakFreq: 1200, peakGain: 0, peakQ: 140 },
+      cabin: { bassBoost: 170, hpCutoff: 60, hpQ: 70, lpCutoff: 4800, lpQ: 70, peakFreq: 250, peakGain: 15, peakQ: 100 },
+      outdoor: { bassBoost: 80, hpCutoff: 90, hpQ: 70, lpCutoff: 11000, lpQ: 70, peakFreq: 3000, peakGain: 15, peakQ: 100 },
+      bass: { bassBoost: 260, hpCutoff: 40, hpQ: 70, lpCutoff: 6000, lpQ: 70, peakFreq: 120, peakGain: 20, peakQ: 100 },
       flat: { bassBoost: 0, hpCutoff: 20, hpQ: 70, lpCutoff: 12000, lpQ: 70, peakFreq: 1200, peakGain: 0, peakQ: 140 }
     };
     const SCENES = {
@@ -5127,11 +5157,11 @@ registerProcessor('vvvf-processor', VVVFProcessor);
     }
     function applyRunPreset(k) { const pr = RUN_PRESETS[k]; if (pr) setMany(pr); }
     const QUICK = {
-      real: { name: '実車風（標準）', ui: { humAmt: 30, drvAmt: 100, carrierAmt: 60, sidebandAmt: 25, qdAmt: 35, coastHum: 100, gearAmt: 15, structLP: 1800, bodyAmt: 60, runAmt: 25, syncTrimDb: -36, drvOn: true }, drv: 'std', eq: 'auto', run: 'std', body: 'stainless', harm: 'real', scene: 'dry' },
-      quiet: { name: '静かな車内', ui: { humAmt: 20, drvAmt: 70, carrierAmt: 35, sidebandAmt: 15, qdAmt: 20, coastHum: 80, gearAmt: 10, structLP: 1400, bodyAmt: 70, runAmt: 40, syncTrimDb: -40, drvOn: true }, drv: 'soft', eq: 'cabin', run: 'cabin', body: 'steel', harm: 'simple', scene: 'cabin' },
-      whine: { name: '高音の唸り強め', ui: { humAmt: 20, drvAmt: 160, carrierAmt: 45, sidebandAmt: 20, qdAmt: 25, coastHum: 90, gearAmt: 15, structLP: 2200, bodyAmt: 55, runAmt: 20, syncTrimDb: -38, drvOn: true, tiltAmt: 25 }, drv: 'high', eq: 'outdoor', run: 'std', body: 'alu', harm: 'simple', scene: 'dry' },
-      outdoor: { name: '車外（ホームで聞く音）', ui: { humAmt: 40, drvAmt: 80, carrierAmt: 80, sidebandAmt: 40, qdAmt: 60, coastHum: 110, gearAmt: 25, structLP: 3500, bodyAmt: 45, runAmt: 75, syncTrimDb: -30, drvOn: true }, drv: 'std', eq: 'outdoor', run: 'outdoor', body: 'under', harm: 'rich', scene: 'outdoor' },
-      minimal: { name: 'モーター音だけ', ui: { humAmt: 45, drvAmt: 120, carrierAmt: 50, sidebandAmt: 20, qdAmt: 25, coastHum: 100, gearAmt: 10, structLP: 1800, bodyAmt: 40, runAmt: 0, jointAmt: 0, aeroAmt: 0, rumbleAmt: 0, fanAmt: 0, airAmt: 0, diffuseAmt: 0, syncTrimDb: -36, drvOn: true }, drv: 'std', eq: 'auto', run: null, body: 'stainless', harm: 'real', scene: 'dry' }
+      real: { name: '実車風（標準）', ui: { humAmt: 60, drvAmt: 100, carrierAmt: 80, sidebandAmt: 35, qdAmt: 60, coastHum: 130, gearAmt: 35, structLP: 3500, bodyAmt: 60, runAmt: 30, syncTrimDb: -36, drvOn: true }, drv: 'std', eq: 'auto', run: 'std', body: 'stainless', harm: 'real', scene: 'dry' },
+      quiet: { name: '静かな車内', ui: { humAmt: 40, drvAmt: 70, carrierAmt: 55, sidebandAmt: 25, qdAmt: 40, coastHum: 100, gearAmt: 20, structLP: 2200, bodyAmt: 70, runAmt: 40, syncTrimDb: -40, drvOn: true }, drv: 'soft', eq: 'cabin', run: 'cabin', body: 'steel', harm: 'simple', scene: 'cabin' },
+      whine: { name: '高音の唸り強め', ui: { humAmt: 40, drvAmt: 150, carrierAmt: 70, sidebandAmt: 30, qdAmt: 40, coastHum: 110, gearAmt: 25, structLP: 4000, bodyAmt: 55, runAmt: 25, syncTrimDb: -38, drvOn: true, tiltAmt: 25 }, drv: 'high', eq: 'outdoor', run: 'std', body: 'alu', harm: 'simple', scene: 'dry' },
+      outdoor: { name: '車外（ホームで聞く音）', ui: { humAmt: 50, drvAmt: 90, carrierAmt: 100, sidebandAmt: 45, qdAmt: 70, coastHum: 120, gearAmt: 40, structLP: 5000, bodyAmt: 45, runAmt: 75, syncTrimDb: -30, drvOn: true }, drv: 'std', eq: 'outdoor', run: 'outdoor', body: 'under', harm: 'rich', scene: 'outdoor' },
+      minimal: { name: 'モーター音だけ', ui: { humAmt: 60, drvAmt: 100, carrierAmt: 80, sidebandAmt: 30, qdAmt: 40, coastHum: 120, gearAmt: 20, structLP: 3500, bodyAmt: 40, runAmt: 0, jointAmt: 0, aeroAmt: 0, rumbleAmt: 0, fanAmt: 0, airAmt: 0, diffuseAmt: 0, syncTrimDb: -36, drvOn: true }, drv: 'std', eq: 'auto', run: null, body: 'stainless', harm: 'real', scene: 'dry' }
     };
     function applyQuick(k) {
       const q = QUICK[k]; if (!q) return;
@@ -5156,7 +5186,7 @@ registerProcessor('vvvf-processor', VVVFProcessor);
     // モニターの初期表示（サウンド開始前）
     ['scope', 'spectro'].forEach(id => { const c = $(id); c.width = c.clientWidth || 600; c.height = c.clientHeight || 100; const x = c.getContext('2d'); x.fillStyle = '#6b7482'; x.font = '12px sans-serif'; x.textAlign = 'center'; x.fillText('「サウンド開始」を押すと表示されます', c.width / 2, c.height / 2); });
     // ---------- 自動保存 ----------
-    const AUTOSAVE_KEY = 'vvvf_sim_real_autosave_v3';
+    const AUTOSAVE_KEY = 'vvvf_sim_real_autosave_v3';   // 中身にversionを持つので、キーは変えず読込時に移行する
     try {
       const raw = localStorage.getItem(AUTOSAVE_KEY);
       if (raw) { applyData(JSON.parse(raw)); }
